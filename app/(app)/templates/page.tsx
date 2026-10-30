@@ -37,10 +37,46 @@ const ALL_TEMPLATES: TemplateItem[] = [
     key: 'adeel-signature',
     name: 'Adeel Ul Rehman Signature',
     description:
-      'Official signature CV of Adeel Ul Rehman. Distinctive two-column format with profile picture, deep cobalt blue accents, and clean Times New Roman typography strictly on one page.',
+      'Official signature CV of Adeel Ul Rehman. High-density single-column format with deep navy headings (#1F3864) strictly on one page.',
     category: 'Modern',
     isAts: true,
     sampleUrl: '/api/templates/adeel-signature/sample-preview',
+  },
+  {
+    key: 'executive-modern-photo',
+    name: 'Executive Modern Photo',
+    description:
+      'Distinctive two-column format with candidate photo, deep cobalt blue accents, and clean typography strictly on one page.',
+    category: 'Modern',
+    isAts: false,
+    sampleUrl: '/api/templates/executive-modern-photo/sample-preview',
+  },
+  {
+    key: 'creative-profile',
+    name: 'Creative Profile Two-Column',
+    description:
+      'Vibrant two-column layout featuring emerald green accents (#00B050), photo profile sidebar, and diamond bullet points on one page.',
+    category: 'Creative',
+    isAts: false,
+    sampleUrl: '/api/templates/creative-profile/sample-preview',
+  },
+  {
+    key: 'teal-minimalist',
+    name: 'Teal Minimalist Professional',
+    description:
+      'Clean modern UK/EU layout with petrol blue accents (#156082), prominent contact header, and timeline work history on one page.',
+    category: 'Modern',
+    isAts: true,
+    sampleUrl: '/api/templates/teal-minimalist/sample-preview',
+  },
+  {
+    key: 'navy-executive-sidebar',
+    name: 'Navy Executive Sidebar',
+    description:
+      'Executive CV layout with a solid deep navy sidebar (#003060), crisp white typography, and structured career experience.',
+    category: 'Modern',
+    isAts: false,
+    sampleUrl: '/api/templates/navy-executive-sidebar/sample-preview',
   },
   {
     key: 'europass',
@@ -144,14 +180,14 @@ export default function TemplatesPage() {
   });
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto px-2 sm:px-6">
       {/* Header & AI Search Bar */}
       <div className="space-y-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 font-display">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 font-display">
             Resume & CV Templates
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Choose an ATS-compliant, recruiter-approved format to launch your job search.
           </p>
         </div>
@@ -159,7 +195,7 @@ export default function TemplatesPage() {
         {/* AI Matcher Search Input */}
         <form
           onSubmit={handleAiSearch}
-          className="p-4 rounded-2xl bg-gradient-to-r from-primary-500/10 via-blue-500/5 to-transparent border border-primary-500/20 shadow-xs space-y-2"
+          className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-primary-500/10 via-blue-500/5 to-transparent border border-primary-500/20 shadow-xs space-y-2"
         >
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary-600 dark:text-primary-400" />
@@ -170,16 +206,17 @@ export default function TemplatesPage() {
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Input
-                placeholder="Describe the job you're applying for (e.g. 'Software Engineer in Germany' or 'Graphic Designer')..."
+                placeholder="Describe the job you're applying for (e.g. 'Software Engineer in Germany')..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-white dark:bg-slate-900"
+                className="bg-white dark:bg-slate-900 text-xs sm:text-sm"
               />
             </div>
             <div className="flex gap-2">
               <Button
                 type="submit"
                 variant="primary"
+                size="sm"
                 loading={aiSearching}
                 leftIcon={<Search className="h-4 w-4" />}
                 className="shrink-0"
@@ -187,19 +224,48 @@ export default function TemplatesPage() {
                 Find Best Match
               </Button>
               {aiRanking && (
-                <Button variant="ghost" onClick={clearAiSearch} className="shrink-0">
+                <Button variant="ghost" size="sm" onClick={clearAiSearch} className="shrink-0">
                   Reset
                 </Button>
               )}
             </div>
           </div>
         </form>
+
+        {/* Mobile Horizontal Category Pills */}
+        <div className="lg:hidden flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setSelectedCategory(cat)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                selectedCategory === cat
+                  ? 'bg-primary-600 text-white font-semibold shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setAtsOnly(!atsOnly)}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              atsOnly
+                ? 'bg-emerald-600 text-white font-semibold'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+            }`}
+          >
+            {atsOnly ? '✓ ATS Only' : 'ATS Only'}
+          </button>
+        </div>
       </div>
 
       {/* Main Grid with Left Filter Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Filters Panel */}
-        <div className="space-y-6 lg:border-r lg:border-slate-200 dark:lg:border-slate-800 lg:pr-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8">
+        {/* Filters Panel (Desktop) */}
+        <div className="hidden lg:block space-y-6 lg:border-r lg:border-slate-200 dark:lg:border-slate-800 lg:pr-6">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
             <Filter className="h-4 w-4 text-slate-500" />
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -217,7 +283,7 @@ export default function TemplatesPage() {
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-colors flex items-center justify-between ${
+                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-colors flex items-center justify-between cursor-pointer ${
                     selectedCategory === cat
                       ? 'bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
@@ -241,7 +307,7 @@ export default function TemplatesPage() {
           </div>
         </div>
 
-        {/* Templates Grid */}
+        {/* Templates Grid: 2 Columns on Mobile, 2 on MD, 3 on XL */}
         <div className="lg:col-span-3 space-y-6">
           {filteredTemplates.length === 0 ? (
             <EmptyState
@@ -258,21 +324,23 @@ export default function TemplatesPage() {
               }}
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-6">
               {filteredTemplates.map((template) => {
                 const aiMatch = aiRanking?.find((r) => r.templateKey === template.key);
 
                 return (
                   <Card
                     key={template.key}
-                    className="group relative overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 border-slate-200 dark:border-slate-800"
+                    className="group relative overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 border-slate-200 dark:border-slate-800 rounded-xl sm:rounded-2xl"
                   >
                     {/* Thumbnail Preview Area with Live Iframe Mini */}
                     <div className="relative aspect-[1/1.38] w-full bg-white overflow-hidden border-b border-slate-200 dark:border-slate-800">
-                      <TemplatePreviewFrame templateKey={template.key} />
+                      <Link href={`/templates/${template.key}/preview`} className="block w-full h-full">
+                        <TemplatePreviewFrame templateKey={template.key} />
+                      </Link>
 
-                      {/* Hover Overlay */}
-                      <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-4 backdrop-blur-xs">
+                      {/* Hover Overlay (Desktop) */}
+                      <div className="hidden sm:flex absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex-col items-center justify-center gap-3 p-4 backdrop-blur-xs">
                         <Link href={`/templates/${template.key}/preview`}>
                           <Button variant="secondary" size="sm" leftIcon={<Eye className="h-4 w-4" />}>
                             Full Preview
@@ -289,51 +357,57 @@ export default function TemplatesPage() {
                       </div>
 
                       {/* Badges on Thumbnail */}
-                      <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 pointer-events-none">
-                        <Badge variant="default" className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xs">
+                      <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 flex flex-wrap gap-1 pointer-events-none">
+                        <Badge
+                          variant="default"
+                          className="bg-white/95 dark:bg-slate-900/95 text-[9px] sm:text-xs px-1.5 py-0.5 backdrop-blur-xs font-medium"
+                        >
                           {template.category}
                         </Badge>
                         {template.isAts && (
-                          <Badge variant="success" className="bg-emerald-500/90 text-white backdrop-blur-xs">
+                          <Badge
+                            variant="success"
+                            className="bg-emerald-500/90 text-white text-[9px] sm:text-xs px-1.5 py-0.5 backdrop-blur-xs hidden sm:inline-flex"
+                          >
                             ATS Ready
                           </Badge>
                         )}
                         {aiMatch && (
-                          <Badge variant="primary" className="bg-primary-600 text-white font-semibold">
-                            {aiMatch.relevance}% AI Match
+                          <Badge variant="primary" className="bg-primary-600 text-white font-semibold text-[9px] sm:text-xs px-1.5 py-0.5">
+                            {aiMatch.relevance}% Match
                           </Badge>
                         )}
                       </div>
                     </div>
 
                     {/* Card Footer Details */}
-                    <div className="p-4 flex-1 flex flex-col justify-between">
+                    <div className="p-2 sm:p-4 flex-1 flex flex-col justify-between">
                       <div className="space-y-1">
-                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-base">
+                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-xs sm:text-base leading-tight truncate">
                           {template.name}
                         </h3>
-                        <p className="text-xs text-slate-500 line-clamp-2">
+                        <p className="text-[11px] sm:text-xs text-slate-500 line-clamp-2 hidden sm:block">
                           {template.description}
                         </p>
                         {aiMatch?.reason && (
-                          <p className="text-[11px] text-primary-600 dark:text-primary-400 font-medium italic mt-1">
+                          <p className="text-[10px] sm:text-[11px] text-primary-600 dark:text-primary-400 font-medium italic truncate">
                             ✨ {aiMatch.reason}
                           </p>
                         )}
                       </div>
 
-                      <div className="pt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 mt-4">
+                      <div className="pt-2 sm:pt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 mt-2 sm:mt-4 gap-1">
                         <Link
                           href={`/templates/${template.key}/preview`}
-                          className="text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-primary-600"
+                          className="text-[11px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-primary-600 truncate"
                         >
-                          View Details
+                          Preview
                         </Link>
                         <Button
                           size="sm"
-                          variant="ghost"
+                          variant="primary"
+                          className="text-[11px] sm:text-xs px-2 sm:px-3 h-7 sm:h-8"
                           onClick={() => router.push(`/cv/new?template=${template.key}`)}
-                          rightIcon={<ArrowRight className="h-3 w-3" />}
                         >
                           Use
                         </Button>

@@ -68,9 +68,37 @@ export default function LandingPage() {
     {
       key: 'adeel-signature',
       name: 'Adeel Ul Rehman Signature',
-      category: 'Signature / Modern',
-      description: 'Official signature CV of Adeel Ul Rehman. Distinctive two-column format with profile picture, blue accents, and clean typography.',
-      thumbnail: '/template-thumbnails/adeel-two-column.png',
+      category: 'Signature',
+      description: 'Official single-column format with deep navy headings and high-density technical sections.',
+      thumbnail: '/template-thumbnails/adeel-signature.png',
+    },
+    {
+      key: 'executive-modern-photo',
+      name: 'Executive Modern Photo',
+      category: 'Modern',
+      description: 'Two-column format with candidate photo, cobalt blue accents, and clean typography.',
+      thumbnail: '/template-thumbnails/executive-modern-photo.png',
+    },
+    {
+      key: 'creative-profile',
+      name: 'Creative Profile Two-Column',
+      category: 'Creative',
+      description: 'Vibrant two-column layout with emerald green accents, photo sidebar, and diamond bullets.',
+      thumbnail: '/template-thumbnails/creative-profile.png',
+    },
+    {
+      key: 'teal-minimalist',
+      name: 'Teal Minimalist Professional',
+      category: 'Modern',
+      description: 'Clean UK/EU layout with petrol blue accents and timeline work history.',
+      thumbnail: '/template-thumbnails/teal-minimalist.png',
+    },
+    {
+      key: 'navy-executive-sidebar',
+      name: 'Navy Executive Sidebar',
+      category: 'Executive',
+      description: 'Solid deep navy sidebar with crisp white typography and executive career focus.',
+      thumbnail: '/template-thumbnails/navy-executive-sidebar.png',
     },
     {
       key: 'europass',
@@ -265,15 +293,17 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-6">
               {templates.map((tpl) => (
                 <div
                   key={tpl.key}
-                  className="group rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col"
+                  className="group rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs hover:shadow-lg transition-all duration-200 flex flex-col"
                 >
                   <div className="relative aspect-[1/1.38] bg-white overflow-hidden flex items-center justify-center border-b border-slate-100 dark:border-slate-800">
-                    <TemplatePreviewFrame templateKey={tpl.key} />
-                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-[2px] z-10">
+                    <Link href={`/templates/${tpl.key}/preview`} className="block w-full h-full">
+                      <TemplatePreviewFrame templateKey={tpl.key} />
+                    </Link>
+                    <div className="hidden sm:flex absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-2 backdrop-blur-[2px] z-10">
                       <Link href={`/templates/${tpl.key}/preview`}>
                         <Button variant="secondary" size="sm" leftIcon={<Eye className="h-4 w-4" />}>
                           Preview
@@ -281,18 +311,26 @@ export default function LandingPage() {
                       </Link>
                       <Link href={`/register?template=${tpl.key}`}>
                         <Button variant="primary" size="sm">
-                          Use Template
+                          Use
                         </Button>
                       </Link>
                     </div>
                   </div>
-                  <div className="p-5 flex-1 flex flex-col justify-between">
+                  <div className="p-2.5 sm:p-5 flex-1 flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <h4 className="font-semibold text-base">{tpl.name}</h4>
-                        <Badge variant="outline">{tpl.category}</Badge>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <h4 className="font-semibold text-xs sm:text-base truncate">{tpl.name}</h4>
+                        <Badge variant="outline" className="text-[9px] sm:text-xs px-1 py-0 shrink-0 hidden sm:inline-flex">{tpl.category}</Badge>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{tpl.description}</p>
+                      <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 line-clamp-2 hidden sm:block">{tpl.description}</p>
+                    </div>
+                    <div className="sm:hidden pt-2 border-t border-slate-100 dark:border-slate-800 mt-2 flex items-center justify-between">
+                      <Link href={`/templates/${tpl.key}/preview`} className="text-[11px] font-medium text-slate-500">
+                        Preview
+                      </Link>
+                      <Link href={`/register?template=${tpl.key}`} className="text-[11px] font-semibold text-primary-600">
+                        Use →
+                      </Link>
                     </div>
                   </div>
                 </div>
