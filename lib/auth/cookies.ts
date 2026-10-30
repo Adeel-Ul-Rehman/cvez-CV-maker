@@ -11,10 +11,26 @@ interface TokenPair {
 }
 
 /**
+ * Returns cookie domain if custom, or undefined (host-only) for localhost and *.vercel.app.
+ * Avoids Public Suffix List rejection on *.vercel.app domains.
+ */
+export function getCookieDomain(): string | undefined {
+  if (
+    !env.COOKIE_DOMAIN ||
+    env.COOKIE_DOMAIN === 'localhost' ||
+    env.COOKIE_DOMAIN.endsWith('.vercel.app') ||
+    env.COOKIE_DOMAIN.includes('vercel.app')
+  ) {
+    return undefined;
+  }
+  return env.COOKIE_DOMAIN;
+}
+
+/**
  * Sets httpOnly authentication cookies on a NextResponse.
  */
 export function setAuthCookies(res: NextResponse, tokens: TokenPair): void {
-  const domain = env.COOKIE_DOMAIN !== 'localhost' ? env.COOKIE_DOMAIN : undefined;
+  const domain = getCookieDomain();
 
   res.cookies.set(ACCESS_COOKIE, tokens.access, {
     httpOnly: true,
@@ -39,7 +55,7 @@ export function setAuthCookies(res: NextResponse, tokens: TokenPair): void {
  * Clears authentication cookies on a NextResponse.
  */
 export function clearAuthCookies(res: NextResponse): void {
-  const domain = env.COOKIE_DOMAIN !== 'localhost' ? env.COOKIE_DOMAIN : undefined;
+  const domain = getCookieDomain();
 
   res.cookies.set(ACCESS_COOKIE, '', {
     httpOnly: true,

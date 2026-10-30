@@ -51,24 +51,21 @@ function LoginForm() {
     setError(null);
 
     try {
-      await api.post('/api/auth/login', { email, password });
+      const res: any = await api.post('/api/auth/login', { email, password });
       toastSuccess('Welcome back!', 'Signed in successfully.');
 
-      const meAction = await dispatch(fetchMe());
-      const user = (meAction.payload as any);
+      const user = res?.user || res?.data?.user;
+      const targetUrl = redirectParam || (user?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
 
-      if (redirectParam) {
-        router.push(redirectParam);
-      } else if (user?.role === 'admin') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/dashboard');
-      }
+      // Refresh auth state in store
+      dispatch(fetchMe());
+
+      // Hard redirect to ensure fresh cookies are sent and dashboard renders immediately
+      window.location.href = targetUrl;
     } catch (err: any) {
       const msg = err instanceof ApiError ? err.message : 'Invalid credentials. Please try again.';
       setError(msg);
       toastError('Sign in failed', msg);
-    } finally {
       setLoading(false);
     }
   };

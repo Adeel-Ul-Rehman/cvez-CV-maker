@@ -123,11 +123,11 @@ function VerifyOtpForm() {
         const meAction = await dispatch(fetchMe());
         const user = meAction.payload as any;
         if (user?.role === 'admin') {
-          router.push('/admin/dashboard');
+          window.location.href = '/admin/dashboard';
         } else if (user?.email) {
-          router.push('/dashboard');
+          window.location.href = '/dashboard';
         } else {
-          router.push(`/login?email=${encodeURIComponent(email)}&verified=true`);
+          window.location.href = `/login?email=${encodeURIComponent(email)}&verified=true`;
         }
       }
     } catch (err: any) {

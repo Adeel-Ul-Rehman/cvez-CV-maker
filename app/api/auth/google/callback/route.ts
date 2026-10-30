@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { env } from '@/lib/env';
 import { issueTokenPair } from '@/lib/auth/tokens';
-import { setAuthCookies, OAUTH_STATE_COOKIE } from '@/lib/auth/cookies';
+import { setAuthCookies, OAUTH_STATE_COOKIE, getCookieDomain } from '@/lib/auth/cookies';
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl;
@@ -10,7 +10,12 @@ export async function GET(req: NextRequest) {
   const state = url.searchParams.get('state');
   const error = url.searchParams.get('error');
 
-  const appBaseUrl = env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
+  const proto = req.headers.get('x-forwarded-proto') || 'https';
+  const computedOrigin = host ? `${proto}://${host}` : req.nextUrl.origin;
+
+  const appBaseUrl = env.NEXT_PUBLIC_APP_URL || computedOrigin || 'http://localhost:3000';
+  const callbackUrl = env.GOOGLE_CALLBACK_URL || `${computedOrigin}/api/auth/google/callback`;
 
   if (error) {
     return NextResponse.redirect(`${appBaseUrl}/login?auth_error=${encodeURIComponent(error)}`);
@@ -33,7 +38,7 @@ export async function GET(req: NextRequest) {
         code,
         client_id: env.GOOGLE_CLIENT_ID || '',
         client_secret: env.GOOGLE_CLIENT_SECRET || '',
-        redirect_uri: env.GOOGLE_CALLBACK_URL || '',
+        redirect_uri: callbackUrl,
         grant_type: 'authorization_code',
       }),
     });
@@ -131,15 +136,14 @@ export async function GET(req: NextRequest) {
     setAuthCookies(response, tokens);
 
     // Clear state cookie
+    const domain = getCookieDomain();
     response.cookies.set(OAUTH_STATE_COOKIE, '', {
       httpOnly: true,
       sameSite: 'lax',
       secure: env.COOKIE_SECURE,
       path: '/',
       maxAge: 0,
-      ...(env.COOKIE_DOMAIN && env.COOKIE_DOMAIN !== 'localhost'
-        ? { domain: env.COOKIE_DOMAIN }
-        : {}),
+      ...(domain ? { domain } : {}),
     });
 
     return response;
