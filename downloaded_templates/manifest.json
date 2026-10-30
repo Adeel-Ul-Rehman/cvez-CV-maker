@@ -1,0 +1,372 @@
+[
+  {
+    "filename": "jobsacuk_ats_cv.docx",
+    "source_url": "https://career-advice.jobs.ac.uk/wp-content/uploads/Free_ATS_Compliant_CV-jobs.ac_.uk_-1.docx",
+    "license": "Free for personal and job application use (jobs.ac.uk)",
+    "category_suggestion": "ATS-Friendly",
+    "file_format": "docx",
+    "file_size_bytes": 22920,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "jobsacuk_ats_cv.pdf",
+    "source_url": "https://career-advice.jobs.ac.uk/wp-content/uploads/Free_ATS_Compliant_CV-jobs.ac_.uk_.pdf",
+    "license": "Free for personal and job application use (jobs.ac.uk)",
+    "category_suggestion": "ATS-Friendly",
+    "file_format": "pdf",
+    "file_size_bytes": 215074,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_ats_english_single_01.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/11_%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86/%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86-%E5%8D%95%E9%A1%B501.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "ATS-Friendly",
+    "file_format": "docx",
+    "file_size_bytes": 75841,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_ats_english_single_02.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/11_%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86/%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86-%E5%8D%95%E9%A1%B502.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "ATS-Friendly",
+    "file_format": "docx",
+    "file_size_bytes": 68718,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "jobhire_modern_resume.docx",
+    "source_url": "https://raw.githubusercontent.com/jobhire-ai/jobhireai-resume-templates/main/templates/Modern%20Resume.docx",
+    "license": "MIT (jobhire-ai)",
+    "category_suggestion": "Modern",
+    "file_format": "docx",
+    "file_size_bytes": 50518,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "jobhire_two_column_resume.docx",
+    "source_url": "https://raw.githubusercontent.com/jobhire-ai/jobhireai-resume-templates/main/templates/Two-Column%20Resume.docx",
+    "license": "MIT (jobhire-ai)",
+    "category_suggestion": "Modern",
+    "file_format": "docx",
+    "file_size_bytes": 36073,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_modern_english_single_03.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/11_%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86/%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86-%E5%8D%95%E9%A1%B503.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Modern",
+    "file_format": "docx",
+    "file_size_bytes": 1012973,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_modern_english_single_04.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/11_%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86/%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86-%E5%8D%95%E9%A1%B504.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Modern",
+    "file_format": "docx",
+    "file_size_bytes": 127040,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "jobhire_chronological_resume.docx",
+    "source_url": "https://raw.githubusercontent.com/jobhire-ai/jobhireai-resume-templates/main/templates/Chronological%20resume%20template.docx",
+    "license": "MIT (jobhire-ai)",
+    "category_suggestion": "Classic",
+    "file_format": "docx",
+    "file_size_bytes": 36603,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_classic_executive_01.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/07_%E7%A8%B3%E9%87%8D%E5%A4%A7%E6%B0%94/%E7%A8%B3%E9%87%8D%E5%8D%95%E9%A1%B501.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Classic",
+    "file_format": "docx",
+    "file_size_bytes": 132964,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_classic_executive_02.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/07_%E7%A8%B3%E9%87%8D%E5%A4%A7%E6%B0%94/%E7%A8%B3%E9%87%8D%E5%8D%95%E9%A1%B502.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Classic",
+    "file_format": "docx",
+    "file_size_bytes": 2825540,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_classic_english_three_page_01.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/11_%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86/%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86-%E4%B8%89%E9%A1%B501.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Classic",
+    "file_format": "docx",
+    "file_size_bytes": 314248,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "europass_cv_template.docx",
+    "source_url": "https://www.fileconvy.com/templates/europass-cv/europass-cv-template.docx",
+    "license": "Free for personal and commercial use (FileConvy / Europass format)",
+    "category_suggestion": "Euro (EU)",
+    "file_format": "docx",
+    "file_size_bytes": 44909,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "europass_cv_template.pdf",
+    "source_url": "https://www.fileconvy.com/templates/europass-cv/europass-cv-template.pdf",
+    "license": "Free for personal and commercial use (FileConvy / Europass format)",
+    "category_suggestion": "Euro (EU)",
+    "file_format": "pdf",
+    "file_size_bytes": 72900,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "fileconvy_german_cv.docx",
+    "source_url": "https://www.fileconvy.com/templates/german-cv/german-cv-template.docx",
+    "license": "Free for personal and commercial use (FileConvy)",
+    "category_suggestion": "Euro (EU)",
+    "file_format": "docx",
+    "file_size_bytes": 44568,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "fileconvy_french_cv.docx",
+    "source_url": "https://www.fileconvy.com/templates/french-cv/french-cv-template.docx",
+    "license": "Free for personal and commercial use (FileConvy)",
+    "category_suggestion": "Euro (EU)",
+    "file_format": "docx",
+    "file_size_bytes": 49302,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "fileconvy_uk_cv.docx",
+    "source_url": "https://www.fileconvy.com/templates/uk-cv/uk-cv-template.docx",
+    "license": "Free for personal and commercial use (FileConvy)",
+    "category_suggestion": "UK",
+    "file_format": "docx",
+    "file_size_bytes": 37171,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "fileconvy_uk_cv.pdf",
+    "source_url": "https://www.fileconvy.com/templates/uk-cv/uk-cv-template.pdf",
+    "license": "Free for personal and commercial use (FileConvy)",
+    "category_suggestion": "UK",
+    "file_format": "pdf",
+    "file_size_bytes": 51020,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "jobsacuk_cv_template.docx",
+    "source_url": "https://career-advice.jobs.ac.uk/wp-content/uploads/Free_ATS_Compliant_CV-jobs.ac_.uk_-1.docx",
+    "license": "Free for personal and job application use (jobs.ac.uk)",
+    "category_suggestion": "UK",
+    "file_format": "docx",
+    "file_size_bytes": 22920,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "fileconvy_us_resume.docx",
+    "source_url": "https://www.fileconvy.com/templates/us-resume/us-resume-template.docx",
+    "license": "Free for personal and commercial use (FileConvy)",
+    "category_suggestion": "USA",
+    "file_format": "docx",
+    "file_size_bytes": 36692,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "fileconvy_us_resume.pdf",
+    "source_url": "https://www.fileconvy.com/templates/us-resume/us-resume-template.pdf",
+    "license": "Free for personal and commercial use (FileConvy)",
+    "category_suggestion": "USA",
+    "file_format": "pdf",
+    "file_size_bytes": 47230,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "jobhire_harvard_resume.docx",
+    "source_url": "https://raw.githubusercontent.com/jobhire-ai/jobhireai-resume-templates/main/templates/Harvard%20resume%20template.docx",
+    "license": "MIT (jobhire-ai)",
+    "category_suggestion": "USA",
+    "file_format": "docx",
+    "file_size_bytes": 36253,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_asian_table_single_01.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/01_%E8%A1%A8%E6%A0%BC%E7%AE%80%E5%8E%86/%E5%8D%95%E9%A1%B5/%E5%8D%95%E9%A1%B5%E8%A1%A8%E6%A0%BC%E7%AE%80%E5%8E%86%2001.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Asian",
+    "file_format": "docx",
+    "file_size_bytes": 46663,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_asian_table_single_02.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/01_%E8%A1%A8%E6%A0%BC%E7%AE%80%E5%8E%86/%E5%8D%95%E9%A1%B5/%E5%8D%95%E9%A1%B5%E8%A1%A8%E6%A0%BC%E7%AE%80%E5%8E%86%2002.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Asian",
+    "file_format": "docx",
+    "file_size_bytes": 44514,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_asian_table_single_03.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/01_%E8%A1%A8%E6%A0%BC%E7%AE%80%E5%8E%86/%E5%8D%95%E9%A1%B5/%E5%8D%95%E9%A1%B5%E8%A1%A8%E6%A0%BC%E7%AE%80%E5%8E%86%2003.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Asian",
+    "file_format": "docx",
+    "file_size_bytes": 39692,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_asian_english_single_07.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/11_%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86/%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86-%E5%8D%95%E9%A1%B507.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Asian",
+    "file_format": "docx",
+    "file_size_bytes": 162559,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "jobhire_creative_resume.docx",
+    "source_url": "https://raw.githubusercontent.com/jobhire-ai/jobhireai-resume-templates/main/templates/%D0%A1reative%20resume%20template.docx",
+    "license": "MIT (jobhire-ai)",
+    "category_suggestion": "Creative",
+    "file_format": "docx",
+    "file_size_bytes": 37075,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_creative_vibrant_01.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/04_%E6%B4%BB%E6%B3%BC%E6%98%8E%E6%9C%97/%E6%B4%BB%E6%B3%BC%E5%8D%95%E9%A1%B501.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Creative",
+    "file_format": "docx",
+    "file_size_bytes": 129070,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_creative_vibrant_02.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/04_%E6%B4%BB%E6%B3%BC%E6%98%8E%E6%9C%97/%E6%B4%BB%E6%B3%BC%E5%8D%95%E9%A1%B502.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Creative",
+    "file_format": "docx",
+    "file_size_bytes": 123783,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_creative_artsy_01.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/06_%E6%96%87%E8%89%BA%E6%B8%85%E6%96%B0/%E6%96%87%E8%89%BA%E5%8D%95%E9%A1%B501.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Creative",
+    "file_format": "docx",
+    "file_size_bytes": 136899,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_minimal_elegant_01.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/05_%E7%AE%80%E7%BA%A6%E4%BC%98%E9%9B%85/%E7%AE%80%E7%BA%A6%E5%8D%95%E9%A1%B501.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Minimal",
+    "file_format": "docx",
+    "file_size_bytes": 160421,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_minimal_elegant_02.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/05_%E7%AE%80%E7%BA%A6%E4%BC%98%E9%9B%85/%E7%AE%80%E7%BA%A6%E5%8D%95%E9%A1%B502.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Minimal",
+    "file_format": "docx",
+    "file_size_bytes": 74924,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_minimal_english_single_05.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/11_%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86/%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86-%E5%8D%95%E9%A1%B505.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Minimal",
+    "file_format": "docx",
+    "file_size_bytes": 112360,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_minimal_english_single_06.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/11_%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86/%E8%8B%B1%E6%96%87%E7%AE%80%E5%8E%86-%E5%8D%95%E9%A1%B506.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Minimal",
+    "file_format": "docx",
+    "file_size_bytes": 135543,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_academic_graduate_001.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/12_%E7%A0%94%E7%A9%B6%E7%94%9F%E5%A4%8D%E8%AF%95/%E5%A4%8D%E8%AF%95%E5%8D%95%E9%A1%B5001.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Academic",
+    "file_format": "docx",
+    "file_size_bytes": 98289,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_academic_graduate_002.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/12_%E7%A0%94%E7%A9%B6%E7%94%9F%E5%A4%8D%E8%AF%95/%E5%A4%8D%E8%AF%95%E5%8D%95%E9%A1%B5002.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Academic",
+    "file_format": "docx",
+    "file_size_bytes": 99422,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  },
+  {
+    "filename": "hicv_academic_graduate_003.docx",
+    "source_url": "https://raw.githubusercontent.com/HICV-CN/hicv-word-resume-templates/main/templates/12_%E7%A0%94%E7%A9%B6%E7%94%9F%E5%A4%8D%E8%AF%95/%E5%A4%8D%E8%AF%95%E5%8D%95%E9%A1%B5003.docx",
+    "license": "Free to use and redistribute with source attribution (HICV-CN)",
+    "category_suggestion": "Academic",
+    "file_format": "docx",
+    "file_size_bytes": 109344,
+    "validated": true,
+    "notes": "Validated existing file on disk."
+  }
+]

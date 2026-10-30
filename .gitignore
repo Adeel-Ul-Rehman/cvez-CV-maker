@@ -1,0 +1,43 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+/test-exports
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc & OS
+.DS_Store
+Thumbs.db
+*.pem
+*.key
+*.cert
+temp.txt
+
+# debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# local env files (strictly ignore all real env files, preserve example)
+.env
+.env*.local
+.env.development
+.env.test
+.env.production
+!.env.example
+
+# temporary inspections
+downloaded_templates/inspections/
+
+# typescript
+*.tsbuildinfo
