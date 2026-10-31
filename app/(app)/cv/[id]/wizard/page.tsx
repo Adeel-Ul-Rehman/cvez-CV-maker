@@ -17,6 +17,7 @@ import { ImproveSummaryModal } from '@/components/features/ai/improve-summary-mo
 import { ImproveSkillsModal } from '@/components/features/ai/improve-skills-modal';
 import { toastError, toastSuccess } from '@/components/ui/toast';
 import { apiClient } from '@/lib/api-client';
+import { CvPreviewFrame } from '@/components/features/cv/cv-preview-frame';
 import {
   User,
   Briefcase,
@@ -38,6 +39,9 @@ import {
   ExternalLink,
   Camera,
   UploadCloud,
+  Eye,
+  FileEdit,
+  Download,
 } from 'lucide-react';
 
 const STEPS = [
@@ -65,6 +69,31 @@ export default function CvWizardPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedStatus, setSavedStatus] = useState<'saved' | 'saving' | 'idle'>('idle');
+  const [mobileTab, setMobileTab] = useState<'form' | 'preview'>('form');
+  const [previewTimestamp, setPreviewTimestamp] = useState<number>(Date.now());
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleWizardExportPdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      await saveProgress();
+      const blob = await apiClient.downloadBlob(`/api/cv/${cvId}/export/pdf`, 'POST');
+      const filename = `${(cvTitle || 'resume').replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toastSuccess('Download complete', 'Your PDF resume has been downloaded.');
+    } catch (err: any) {
+      toastError('Download failed', err?.message || 'Could not export PDF.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   // Photo upload handler with strict 100 KB limit
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -376,53 +405,150 @@ export default function CvWizardPage() {
         <Progress value={(currentStep / STEPS.length) * 100} />
       </div>
 
-      {/* Main Wizard Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Step Indicator Sidebar */}
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-2">
-          {STEPS.map((step) => {
-            const Icon = step.icon;
-            const isCompleted = step.id < currentStep;
-            const isCurrent = step.id === currentStep;
+      {/* Mobile Tab Toggle: Edit Form vs Live Preview */}
+      <div className="flex lg:hidden p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 sticky top-16 z-20 backdrop-blur-md shadow-xs">
+        <button
+          type="button"
+          onClick={() => setMobileTab('form')}
+          className={`flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+            mobileTab === 'form'
+              ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400'
+          }`}
+        >
+          <FileEdit className="h-4 w-4" />
+          <span>Edit Step ({currentStep}/8)</span>
+        </button>
 
-            return (
-              <button
-                key={step.id}
-                type="button"
-                onClick={async () => {
-                  await saveProgress();
-                  setCurrentStep(step.id);
-                }}
-                className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-medium text-left transition-all ${
-                  isCurrent
-                    ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400 font-semibold border-l-4 border-primary-600'
-                    : isCompleted
-                    ? 'text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                    : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                }`}
-              >
-                <div
-                  className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 ${
-                    isCompleted
-                      ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600'
-                      : isCurrent
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+        <button
+          type="button"
+          onClick={async () => {
+            await saveProgress();
+            setPreviewTimestamp(Date.now());
+            setMobileTab('preview');
+          }}
+          className={`flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+            mobileTab === 'preview'
+              ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400'
+          }`}
+        >
+          <Eye className="h-4 w-4" />
+          <span>Live Preview</span>
+        </button>
+      </div>
+
+      {/* Mobile Live Preview Viewport */}
+      {mobileTab === 'preview' ? (
+        <div className="lg:hidden space-y-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMobileTab('form')}
+              leftIcon={<ArrowLeft className="h-4 w-4" />}
+              className="text-xs"
+            >
+              Back to Form
+            </Button>
+
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleWizardExportPdf}
+              loading={downloadingPdf}
+              leftIcon={<Download className="h-4 w-4" />}
+              className="text-xs"
+            >
+              Download PDF
+            </Button>
+          </div>
+
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-2 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-lg">
+            <div className="relative aspect-[1/1.414] w-full bg-white rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800">
+              <CvPreviewFrame cvId={cvId} timestamp={previewTimestamp} title="CV Live Preview" />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Mobile Horizontal Step Stepper */}
+          <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {STEPS.map((step) => {
+              const isCompleted = step.id < currentStep;
+              const isCurrent = step.id === currentStep;
+
+              return (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={async () => {
+                    await saveProgress();
+                    setCurrentStep(step.id);
+                    setMobileTab('form');
+                  }}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                    isCurrent
+                      ? 'bg-primary-600 text-white border-primary-600 shadow-xs'
+                      : isCompleted
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800'
                   }`}
                 >
-                  {isCompleted ? <Check className="h-4 w-4 stroke-[3]" /> : <Icon className="h-3.5 w-3.5" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="block truncate">{step.name}</span>
-                  {step.optional && <span className="text-[10px] text-slate-400">Optional</span>}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                  {isCompleted ? <Check className="h-3 w-3 stroke-[3]" /> : <span>{step.id}.</span>}
+                  <span>{step.name}</span>
+                </button>
+              );
+            })}
+          </div>
 
-        {/* Step Form Content */}
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+          {/* Main Wizard Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Step Indicator Sidebar (Desktop only) */}
+            <div className="hidden lg:block lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-2">
+              {STEPS.map((step) => {
+                const Icon = step.icon;
+                const isCompleted = step.id < currentStep;
+                const isCurrent = step.id === currentStep;
+
+                return (
+                  <button
+                    key={step.id}
+                    type="button"
+                    onClick={async () => {
+                      await saveProgress();
+                      setCurrentStep(step.id);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-medium text-left transition-all ${
+                      isCurrent
+                        ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400 font-semibold border-l-4 border-primary-600'
+                        : isCompleted
+                        ? 'text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                        : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                    }`}
+                  >
+                    <div
+                      className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 ${
+                        isCompleted
+                          ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600'
+                          : isCurrent
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {isCompleted ? <Check className="h-4 w-4 stroke-[3]" /> : <Icon className="h-3.5 w-3.5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="block truncate">{step.name}</span>
+                      {step.optional && <span className="text-[10px] text-slate-400">Optional</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Step Form Content */}
+            <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
           {/* STEP 1: BASICS */}
           {currentStep === 1 && (
             <div className="space-y-5">
@@ -1889,7 +2015,21 @@ export default function CvWizardPage() {
               Previous
             </Button>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={async () => {
+                  await saveProgress();
+                  setPreviewTimestamp(Date.now());
+                  setMobileTab('preview');
+                }}
+                className="lg:hidden text-xs"
+                leftIcon={<Eye className="h-3.5 w-3.5" />}
+              >
+                Preview
+              </Button>
               {STEPS[currentStep - 1].optional && (
                 <Button
                   variant="ghost"
@@ -1913,6 +2053,8 @@ export default function CvWizardPage() {
           </div>
         </div>
       </div>
+      </>
+      )}
 
       {/* AI Modals */}
       <ImproveSummaryModal

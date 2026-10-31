@@ -28,6 +28,7 @@ import {
   ExternalLink,
   ChevronDown,
   MoreVertical,
+  Sparkles,
 } from 'lucide-react';
 
 interface CvItem {
@@ -229,6 +230,51 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      {/* QUICK ONBOARDING GUIDE FOR FIRST-TIME USERS */}
+      {!loading && cvs.length <= 1 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-primary-500/10 via-primary-500/5 to-transparent border border-primary-500/20 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-primary-700 dark:text-primary-300 font-bold text-xs sm:text-sm">
+              <Sparkles className="h-4 w-4" />
+              <span>Quick Start: 3 Steps to Your Job-Ready CV</span>
+            </div>
+            <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">Guided Assistant</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+            <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800/60">
+              <div className="h-6 w-6 rounded-full bg-primary-100 dark:bg-primary-950 text-primary-600 font-bold text-xs flex items-center justify-center shrink-0">
+                1
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">Select Template</p>
+                <p className="text-[10px] text-slate-500 truncate">8 ATS-friendly layouts</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800/60">
+              <div className="h-6 w-6 rounded-full bg-primary-100 dark:bg-primary-950 text-primary-600 font-bold text-xs flex items-center justify-center shrink-0">
+                2
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">Enhance with AI</p>
+                <p className="text-[10px] text-slate-500 truncate">Auto-write bullet points</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800/60">
+              <div className="h-6 w-6 rounded-full bg-primary-100 dark:bg-primary-950 text-primary-600 font-bold text-xs flex items-center justify-center shrink-0">
+                3
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">Download PDF</p>
+                <p className="text-[10px] text-slate-500 truncate">Export & share anywhere</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* CV LIST */}
       <div>
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Your Documents</h2>
@@ -288,13 +334,26 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Mobile Actions (Edit button + Quick menu) */}
-                <div className="sm:hidden p-2 pt-0 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-1.5">
+                {/* Mobile Actions (Edit button + One-Tap PDF + Quick menu) */}
+                <div className="sm:hidden p-2 pt-0 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-1">
                   <Link href={`/cv/${cv.id}/editor`} className="flex-1 min-w-0">
-                    <Button variant="primary" size="sm" className="w-full text-xs h-7 py-0 font-medium">
+                    <Button variant="primary" size="sm" className="w-full text-[11px] h-7 px-1.5 py-0 font-medium">
                       Edit
                     </Button>
                   </Link>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExportDownload(cv.id, 'pdf', cv.title)}
+                    loading={downloadingId === cv.id}
+                    className="h-7 px-2 text-[11px] font-semibold text-primary-600 dark:text-primary-400 border-primary-200 dark:border-primary-900 shrink-0"
+                    title="Download PDF directly"
+                    aria-label="Download PDF"
+                  >
+                    <Download className="h-3 w-3 mr-0.5" />
+                    <span>PDF</span>
+                  </Button>
 
                   <div className="relative">
                     <Button

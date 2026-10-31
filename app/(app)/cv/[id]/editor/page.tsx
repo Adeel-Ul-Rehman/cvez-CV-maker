@@ -650,26 +650,33 @@ export default function CvEditorPage() {
         {/* Topbar Action Buttons */}
         <div className="flex items-center gap-2">
           {/* Mobile Edit/Preview Tabs */}
-          <div className="flex lg:hidden bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg mr-1">
+          <div className="flex lg:hidden bg-slate-200/80 dark:bg-slate-800 p-0.5 rounded-lg mr-1 border border-slate-300 dark:border-slate-700">
             <button
+              type="button"
               onClick={() => setMobileMode('edit')}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-md ${
+              className={`px-2.5 py-1 text-xs font-semibold rounded-md flex items-center gap-1 transition-all ${
                 mobileMode === 'edit'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
-                  : 'text-slate-500'
+                  ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400'
               }`}
             >
-              Edit
+              <FileText className="h-3.5 w-3.5" />
+              <span>Edit</span>
             </button>
             <button
-              onClick={() => setMobileMode('preview')}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-md ${
+              type="button"
+              onClick={() => {
+                setMobileMode('preview');
+                handleSetFitPage();
+              }}
+              className={`px-2.5 py-1 text-xs font-semibold rounded-md flex items-center gap-1 transition-all ${
                 mobileMode === 'preview'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
-                  : 'text-slate-500'
+                  ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400'
               }`}
             >
-              Preview
+              <Eye className="h-3.5 w-3.5" />
+              <span>Preview</span>
             </button>
           </div>
 
