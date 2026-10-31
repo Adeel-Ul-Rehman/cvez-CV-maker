@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { env } from '@/lib/env';
 import { issueTokenPair } from '@/lib/auth/tokens';
-import { setAuthCookies, OAUTH_STATE_COOKIE, getCookieDomain } from '@/lib/auth/cookies';
+import { setAuthCookies, OAUTH_STATE_COOKIE, getCookieDomain, isSecureCookie, verifySignedOAuthState } from '@/lib/auth/cookies';
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl;
@@ -14,8 +14,16 @@ export async function GET(req: NextRequest) {
   const proto = req.headers.get('x-forwarded-proto') || 'https';
   const computedOrigin = host ? `${proto}://${host}` : req.nextUrl.origin;
 
-  const appBaseUrl = env.NEXT_PUBLIC_APP_URL || computedOrigin || 'http://localhost:3000';
-  const callbackUrl = env.GOOGLE_CALLBACK_URL || `${computedOrigin}/api/auth/google/callback`;
+  let callbackUrl = env.GOOGLE_CALLBACK_URL;
+  // If GOOGLE_CALLBACK_URL is set to localhost but request is on production, use production origin!
+  if (!callbackUrl || (callbackUrl.includes('localhost') && !computedOrigin.includes('localhost'))) {
+    callbackUrl = `${computedOrigin}/api/auth/google/callback`;
+  }
+
+  let appBaseUrl = env.NEXT_PUBLIC_APP_URL;
+  if (!appBaseUrl || (appBaseUrl.includes('localhost') && !computedOrigin.includes('localhost'))) {
+    appBaseUrl = computedOrigin;
+  }
 
   if (error) {
     return NextResponse.redirect(`${appBaseUrl}/login?auth_error=${encodeURIComponent(error)}`);
@@ -23,7 +31,12 @@ export async function GET(req: NextRequest) {
 
   const storedState = req.cookies.get(OAUTH_STATE_COOKIE)?.value;
 
-  if (!code || !state || !storedState || state !== storedState) {
+  // Accept if cookie matches OR cryptographic HMAC signature is valid
+  const isStateAuthentic =
+    (storedState && state === storedState) ||
+    verifySignedOAuthState(state);
+
+  if (!code || !state || !isStateAuthentic) {
     return NextResponse.redirect(`${appBaseUrl}/login?auth_error=invalid_state`);
   }
 
@@ -137,10 +150,11 @@ export async function GET(req: NextRequest) {
 
     // Clear state cookie
     const domain = getCookieDomain();
+    const secure = isSecureCookie();
     response.cookies.set(OAUTH_STATE_COOKIE, '', {
       httpOnly: true,
       sameSite: 'lax',
-      secure: env.COOKIE_SECURE,
+      secure,
       path: '/',
       maxAge: 0,
       ...(domain ? { domain } : {}),

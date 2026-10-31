@@ -3,6 +3,8 @@ import { verifyOtpSchema } from '@/lib/schemas/auth';
 import { sql } from '@/lib/db';
 import { consumeOtpRecord } from '@/lib/auth/otp';
 import { signResetToken } from '@/lib/auth/jwt';
+import { issueTokenPair } from '@/lib/auth/tokens';
+import { setAuthCookies } from '@/lib/auth/cookies';
 import { badRequest, handleApiError, unauthorized } from '@/lib/errors';
 import { getClientIp, rateLimit } from '@/lib/rateLimit';
 
@@ -39,18 +41,31 @@ export async function POST(req: NextRequest) {
     }
 
     if (data.purpose === 'email_verify') {
-      await sql`
+      const updatedRows = await sql`
         UPDATE users
         SET email_verified = TRUE, updated_at = now()
-        WHERE id = ${user.id};
+        WHERE id = ${user.id}
+        RETURNING id, email, role, full_name;
       `;
 
-      return NextResponse.json({
+      const activeUser = updatedRows[0] || user;
+      const tokens = await issueTokenPair({
+        id: activeUser.id,
+        email: activeUser.email,
+        role: activeUser.role,
+        fullName: activeUser.full_name,
+      });
+
+      const response = NextResponse.json({
         ok: true,
         data: {
           verified: true,
+          user: activeUser,
         },
       });
+
+      setAuthCookies(response, tokens);
+      return response;
     }
 
     if (data.purpose === 'password_reset') {

@@ -14,9 +14,10 @@ export function generateOtp(): string {
  * Computes SHA-256 of (code + JWT_SECRET) as hex.
  */
 export function hashOtp(code: string): string {
+  const cleanCode = (code || '').trim().replace(/\s+/g, '');
   return crypto
     .createHash('sha256')
-    .update(code + env.JWT_SECRET)
+    .update(cleanCode + (env.JWT_SECRET || 'cv_maker_secret'))
     .digest('hex');
 }
 
@@ -45,7 +46,8 @@ export async function createOtpRecord(
 ): Promise<{ code: string; expiresAt: Date }> {
   const code = generateOtp();
   const codeHash = hashOtp(code);
-  const expiresAt = new Date(Date.now() + env.OTP_EXPIRY_MINUTES * 60 * 1000);
+  const minutes = Math.max(Number(env.OTP_EXPIRY_MINUTES) || 15, 15);
+  const expiresAt = new Date(Date.now() + minutes * 60 * 1000);
 
   await sql`
     INSERT INTO otp_codes (user_id, code_hash, purpose, expires_at)
@@ -56,7 +58,7 @@ export async function createOtpRecord(
 }
 
 /**
- * Finds the latest non-consumed, non-expired OTP record for (user, purpose),
+ * Finds active non-consumed, non-expired OTP records for (user, purpose),
  * verifies hash, marks consumed=true, and returns true/false.
  */
 export async function consumeOtpRecord(
@@ -64,31 +66,33 @@ export async function consumeOtpRecord(
   purpose: string,
   code: string
 ): Promise<boolean> {
+  const cleanCode = (code || '').trim().replace(/\s+/g, '');
+  if (!cleanCode) return false;
+
   const rows = await sql`
     SELECT id, code_hash, expires_at, consumed
     FROM otp_codes
     WHERE user_id = ${userId}
       AND purpose = ${purpose}
       AND consumed = FALSE
-      AND expires_at > now()
+      AND expires_at > (now() - interval '2 minutes')
     ORDER BY created_at DESC
-    LIMIT 1;
+    LIMIT 5;
   `;
 
   if (!rows || rows.length === 0) {
     return false;
   }
 
-  const record = rows[0];
-  const isValid = verifyOtpHash(code, record.code_hash);
-  if (!isValid) {
+  const matchedRecord = rows.find((record: any) => verifyOtpHash(cleanCode, record.code_hash));
+  if (!matchedRecord) {
     return false;
   }
 
   await sql`
     UPDATE otp_codes
     SET consumed = TRUE
-    WHERE id = ${record.id};
+    WHERE id = ${matchedRecord.id};
   `;
 
   return true;

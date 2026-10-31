@@ -104,30 +104,16 @@ function VerifyOtpForm() {
       } else {
         toastSuccess('Email verified!', 'Your account is ready.');
 
-        // If credentials exist from registration, auto-sign in
         if (typeof window !== 'undefined') {
-          const tempAuth = sessionStorage.getItem('temp_reg_auth');
-          if (tempAuth) {
-            try {
-              const { email: regEmail, password: regPassword } = JSON.parse(tempAuth);
-              if (regEmail === email) {
-                await api.post('/api/auth/login', { email, password: regPassword });
-                sessionStorage.removeItem('temp_reg_auth');
-              }
-            } catch {
-              // ignore
-            }
-          }
+          sessionStorage.removeItem('temp_reg_auth');
         }
 
         const meAction = await dispatch(fetchMe());
         const user = meAction.payload as any;
         if (user?.role === 'admin') {
           window.location.href = '/admin/dashboard';
-        } else if (user?.email) {
-          window.location.href = '/dashboard';
         } else {
-          window.location.href = `/login?email=${encodeURIComponent(email)}&verified=true`;
+          window.location.href = '/dashboard';
         }
       }
     } catch (err: any) {

@@ -5,7 +5,9 @@ import { env } from '../env';
  * Hashes a plaintext password using bcryptjs with configured rounds.
  */
 export async function hashPassword(plain: string): Promise<string> {
-  return bcrypt.hash(plain, env.BCRYPT_ROUNDS);
+  const rounds = Number(env.BCRYPT_ROUNDS) || 10;
+  const salt = await bcrypt.genSalt(rounds);
+  return bcrypt.hash(plain, salt);
 }
 
 /**

@@ -99,9 +99,9 @@ export const env = new Proxy(parsed.data, {
     if (prop === 'GEMINI_API_KEY') {
       return process.env.GEMINI_API_KEY || process.env.GEMINI_API || target.GEMINI_API_KEY;
     }
-    if (process.env[prop] !== undefined) {
-      return process.env[prop];
+    if (prop in target) {
+      return (target as any)[prop];
     }
-    return (target as any)[prop];
+    return process.env[prop];
   },
 });

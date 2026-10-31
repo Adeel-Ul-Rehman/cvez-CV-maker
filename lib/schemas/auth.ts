@@ -26,7 +26,10 @@ export const otpPurposeEnum = z.enum(['email_verify', 'password_reset']);
 
 export const verifyOtpSchema = z.object({
   email: z.string().email('Invalid email address').toLowerCase().trim(),
-  code: z.string().regex(/^\d{6}$/, 'OTP code must be a 6-digit number'),
+  code: z
+    .string()
+    .transform((val) => val.trim().replace(/\s+/g, ''))
+    .pipe(z.string().regex(/^\d{6}$/, 'OTP code must be a 6-digit number')),
   purpose: otpPurposeEnum,
 });
 

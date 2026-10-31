@@ -33,7 +33,9 @@ function LoginForm() {
       if (authError === 'invalid_state') {
         setError('Authentication session timed out. Please try signing in with Google again.');
       } else if (authError === 'token_exchange_failed') {
-        setError('Google sign in failed during token exchange.');
+        setError('Google sign in failed during token exchange. Please ensure your Google Client Secret is correct and the Authorized Redirect URI is configured.');
+      } else if (authError === 'google_not_configured') {
+        setError('Google Sign-In is not configured yet. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in environment variables.');
       } else {
         setError(`Google sign in error: ${authError}`);
       }
