@@ -1,24 +1,37 @@
 import { neon, Pool } from '@neondatabase/serverless';
 import { env } from './env';
 
-if (!env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set in environment variables');
-}
+const DEFAULT_FALLBACK_URL = 'postgresql://postgres:postgres@localhost:5432/neondb';
+const connectionString = env.DATABASE_URL || DEFAULT_FALLBACK_URL;
 
 /**
  * Neon serverless SQL tagged template (HTTP-based).
  * Example: await sql`SELECT * FROM users WHERE email = ${email}`;
  */
-export const sql = neon(env.DATABASE_URL, {
+const rawSql = neon(connectionString, {
   fetchOptions: {
     cache: 'no-store',
+  },
+});
+
+export const sql = new Proxy(rawSql, {
+  apply(target, thisArg, argArray) {
+    if (
+      process.env.NODE_ENV === 'production' &&
+      (!env.DATABASE_URL || env.DATABASE_URL === DEFAULT_FALLBACK_URL)
+    ) {
+      throw new Error(
+        'DATABASE_URL is missing. Please add your Neon DATABASE_URL in Vercel Project Settings -> Environment Variables.'
+      );
+    }
+    return Reflect.apply(target, thisArg, argArray);
   },
 });
 
 /**
  * Neon connection pool for stateful transactions.
  */
-export const pool = new Pool({ connectionString: env.DATABASE_URL });
+export const pool = new Pool({ connectionString });
 
 export interface TransactionContext {
   query: <R = any>(text: string, params?: any[]) => Promise<R[]>;

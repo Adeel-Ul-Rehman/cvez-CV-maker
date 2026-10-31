@@ -32,7 +32,7 @@ try {
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  DATABASE_URL: z.string().default('postgresql://postgres:postgres@localhost:5432/neondb'),
 
   // Admin credentials
   ADMIN_EMAIL: z.string().email().default('admin@cvmaker.local'),
