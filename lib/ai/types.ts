@@ -18,6 +18,8 @@ export type AiFeatureName =
   | 'improve_bullets'
   | 'improve_skills'
   | 'suggest_strengths'
+  | 'job_match'
+  | 'bullet_library'
   | 'ats_check'
   | 'template_search';
 

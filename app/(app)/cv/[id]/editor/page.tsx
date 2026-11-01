@@ -16,6 +16,12 @@ import { ImproveSummaryModal } from '@/components/features/ai/improve-summary-mo
 import { ImproveBulletsModal } from '@/components/features/ai/improve-bullets-modal';
 import { ImproveSkillsModal } from '@/components/features/ai/improve-skills-modal';
 import { SuggestStrengthsModal } from '@/components/features/ai/suggest-strengths-modal';
+import { JobMatchModal } from '@/components/features/ai/job-match-modal';
+import { BulletLibraryModal } from '@/components/features/cv/bullet-library-modal';
+import { CvStrengthMeter } from '@/components/features/cv/cv-strength-meter';
+import { MobilePreviewDrawer } from '@/components/features/mobile/mobile-preview-drawer';
+import { optimizeForOnePage } from '@/lib/cv/one-page-optimizer';
+import { shareViaNativeSheet, sharePdfFileViaNativeSheet } from '@/lib/mobile-share';
 import { AtsCheckModal } from '@/components/features/ai/ats-check-modal';
 import { TemplateRecommendModal } from '@/components/features/ai/template-recommend-modal';
 import { toastError, toastSuccess } from '@/components/ui/toast';
@@ -63,6 +69,8 @@ import {
   Camera,
   UploadCloud,
   User,
+  Target,
+  BookOpen,
 } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
 
@@ -324,6 +332,13 @@ export default function CvEditorPage() {
   } | null>(null);
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
   const [strengthsModalOpen, setStrengthsModalOpen] = useState(false);
+  const [jobMatchModalOpen, setJobMatchModalOpen] = useState(false);
+  const [bulletLibraryOpen, setBulletLibraryOpen] = useState(false);
+  const [bulletLibraryTarget, setBulletLibraryTarget] = useState<{
+    secIdx: number;
+    itemIdx: number;
+    role?: string;
+  } | null>(null);
   const [atsModalOpen, setAtsModalOpen] = useState(false);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
 
@@ -556,6 +571,30 @@ export default function CvEditorPage() {
     toastSuccess(`Added ${newSec.title}`);
   };
 
+  // 1-Click Fit to 1 Page Optimizer
+  const handleFitToOnePage = () => {
+    const result = optimizeForOnePage(config, basics, sections);
+    const updatedConfig = { ...config, ...result.optimizedConfig };
+    setConfig(updatedConfig);
+    triggerAutosave(undefined, undefined, undefined, undefined, updatedConfig);
+    toastSuccess('Layout Optimized for 1 Page', result.explanation);
+  };
+
+  // Insert bullet from Library into target item
+  const handleApplyBulletFromLibrary = (bulletText: string) => {
+    if (!bulletLibraryTarget) return;
+    const { secIdx, itemIdx } = bulletLibraryTarget;
+    const updated = [...sections];
+    if (updated[secIdx]?.items?.[itemIdx]) {
+      const cur = updated[secIdx].items[itemIdx].description || '';
+      updated[secIdx].items[itemIdx].description = cur
+        ? `${cur}\n• ${bulletText}`
+        : `• ${bulletText}`;
+      setSections(updated);
+      triggerAutosave(undefined, undefined, undefined, updated, undefined);
+    }
+  };
+
   // Export Download Trigger
   const handleExport = async (fmt: string) => {
     setExportingFmt(fmt);
@@ -718,10 +757,37 @@ export default function CvEditorPage() {
               <Check className="h-3.5 w-3.5 stroke-[3]" /> Saved
             </span>
           )}
+
+          {/* Real-Time CV Strength Meter */}
+          <CvStrengthMeter basics={basics} sections={sections} />
         </div>
 
         {/* Topbar Action Buttons */}
         <div className="flex items-center gap-2">
+          {/* Fit to 1 Page Optimizer */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleFitToOnePage}
+            leftIcon={<Sparkles className="h-3.5 w-3.5 text-amber-500" />}
+            className="hidden md:inline-flex text-xs font-semibold text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/60 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+            title="Auto-tune typography and spacing to fit neatly on 1 page"
+          >
+            Fit 1 Page
+          </Button>
+
+          {/* Job Match ATS Scanner Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setJobMatchModalOpen(true)}
+            leftIcon={<Target className="h-3.5 w-3.5 text-emerald-600" />}
+            className="hidden xl:inline-flex text-xs font-semibold text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+            title="Match your CV against a job description"
+          >
+            Match Job
+          </Button>
+
           {/* Mobile Edit/Preview Tabs */}
           <div className="flex lg:hidden bg-slate-200/80 dark:bg-slate-800 p-0.5 rounded-lg mr-1 border border-slate-300 dark:border-slate-700">
             <button
@@ -793,6 +859,15 @@ export default function CvEditorPage() {
               >
                 <button
                   type="button"
+                  onClick={() => setJobMatchModalOpen(true)}
+                  className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold"
+                >
+                  <Target className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>Target Job ATS Match</span>
+                </button>
+                <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                <button
+                  type="button"
                   onClick={() => setSummaryModalOpen(true)}
                   className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-300"
                 >
@@ -839,7 +914,15 @@ export default function CvEditorPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShareModalOpen(true)}
+            onClick={async () => {
+              const shared = await shareViaNativeSheet({
+                title: `${title} - CV`,
+                url: shareUrl || window.location.href,
+              });
+              if (!shared) {
+                setShareModalOpen(true);
+              }
+            }}
             leftIcon={<Share2 className="h-4 w-4" />}
           >
             <span className="hidden sm:inline">Share</span>
@@ -860,7 +943,7 @@ export default function CvEditorPage() {
 
             {exportDropdownOpen && (
               <div
-                className="absolute right-0 mt-1 w-44 rounded-xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 py-1.5 z-50 text-xs font-medium"
+                className="absolute right-0 mt-1 w-48 rounded-xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 py-1.5 z-50 text-xs font-medium"
                 onClick={() => setExportDropdownOpen(false)}
               >
                 {['pdf', 'docx', 'png', 'jpg'].map((fmt) => (
@@ -874,6 +957,21 @@ export default function CvEditorPage() {
                     <span className="text-[10px] text-slate-400">.{fmt}</span>
                   </button>
                 ))}
+                <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setExportDropdownOpen(false);
+                    const shared = await sharePdfFileViaNativeSheet(cvId, title);
+                    if (!shared) {
+                      handleExport('pdf');
+                    }
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between text-primary-600 dark:text-primary-400 font-semibold"
+                >
+                  <span>Share PDF to Apps</span>
+                  <Share2 className="h-3.5 w-3.5" />
+                </button>
               </div>
             )}
           </div>
@@ -1277,24 +1375,42 @@ export default function CvEditorPage() {
                                   <div className="space-y-1">
                                     <div className="flex justify-between items-center">
                                       <span className="text-[11px] font-semibold text-slate-500">
-                                        Achievements
+                                        Responsibilities &amp; Achievements
                                       </span>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActiveBulletTarget({
-                                            sectionId: section.id,
-                                            itemIndex: itemIdx,
-                                            role: item.role,
-                                            company: item.company,
-                                            description: item.description || '',
-                                          });
-                                          setBulletsModalOpen(true);
-                                        }}
-                                        className="text-[11px] text-primary-600 dark:text-primary-400 font-medium flex items-center gap-1 hover:underline"
-                                      >
-                                        <Sparkles className="h-3 w-3" /> Suggest Bullets
-                                      </button>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setBulletLibraryTarget({
+                                              secIdx,
+                                              itemIdx,
+                                              role: item.role,
+                                            });
+                                            setBulletLibraryOpen(true);
+                                          }}
+                                          className="text-[11px] text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1 hover:text-primary-600 transition-colors"
+                                        >
+                                          <BookOpen className="h-3 w-3 text-slate-500" />
+                                          <span>Library</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setActiveBulletTarget({
+                                              sectionId: section.id,
+                                              itemIndex: itemIdx,
+                                              role: item.role,
+                                              company: item.company,
+                                              description: item.description || '',
+                                            });
+                                            setBulletsModalOpen(true);
+                                          }}
+                                          className="text-[11px] text-primary-600 dark:text-primary-400 font-medium flex items-center gap-1 hover:underline"
+                                        >
+                                          <Sparkles className="h-3 w-3" />
+                                          <span>AI Polish</span>
+                                        </button>
+                                      </div>
                                     </div>
                                     <Textarea
                                       rows={2}
@@ -1799,8 +1915,29 @@ export default function CvEditorPage() {
               <div className="space-y-6">
                 <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-5">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                    Typography & Layout Styles
+                    Typography &amp; Layout Styles
                   </h3>
+
+                  {/* 1-Click Fit to 1 Page Optimizer Card */}
+                  <div className="p-3.5 rounded-xl border border-primary-200 dark:border-primary-900 bg-primary-50/50 dark:bg-primary-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <h4 className="text-xs font-bold text-primary-900 dark:text-primary-100 flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-primary-600" />
+                        1-Click &quot;Fit to 1 Page&quot; Smart Optimizer
+                      </h4>
+                      <p className="text-[11px] text-primary-700 dark:text-primary-300">
+                        Automatically tunes font size, line-height, and padding scale to compress or balance your CV content onto 1 page.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={handleFitToOnePage}
+                      className="shrink-0 text-xs shadow-xs"
+                    >
+                      Fit to 1 Page
+                    </Button>
+                  </div>
 
                   {/* Font Family (14 Professional Fonts) */}
                   <Select
@@ -2371,6 +2508,77 @@ export default function CvEditorPage() {
           triggerAutosave(undefined, key, undefined, undefined, undefined);
           toastSuccess(`Switched to template: ${key}`);
         }}
+      />
+
+      {/* Target Job ATS Match Scanner */}
+      <JobMatchModal
+        isOpen={jobMatchModalOpen}
+        onClose={() => setJobMatchModalOpen(false)}
+        cvContext={{
+          fullName: basics.fullName,
+          headline: (basics as any).headline || (sections.find((s) => s.type === 'experience')?.items?.[0]?.role) || '',
+          summary: basics.summary,
+          experiences: (sections.find((s) => s.type === 'experience')?.items || []).map((e: any) => ({
+            role: e.role,
+            company: e.company,
+            description: e.description,
+          })),
+          education: (sections.find((s) => s.type === 'education')?.items || []).map((ed: any) => ({
+            degree: ed.degree,
+            institution: ed.institution,
+            field: ed.field,
+          })),
+          skills: (sections.find((s) => s.type === 'skills')?.items || []).map((s: any) => s.name || s),
+          strengths: (sections.find((s) => s.type === 'strengths')?.items || []).map((st: any) => st.title || st.name || st),
+        }}
+        onAddSkill={(skillName) => {
+          const updated = [...sections];
+          let skillSec = updated.find((s) => s.type === 'skills');
+          if (!skillSec) {
+            skillSec = {
+              id: `skills-${Date.now()}`,
+              type: 'skills',
+              title: 'Skills',
+              visible: true,
+              items: [],
+            };
+            updated.push(skillSec);
+          }
+          if (!skillSec.items.some((i: any) => (i.name || '').toLowerCase() === skillName.toLowerCase())) {
+            skillSec.items.push({ name: skillName, level: 'intermediate' });
+            setSections(updated);
+            triggerAutosave(undefined, undefined, undefined, updated, undefined);
+          }
+        }}
+      />
+
+      {/* Prewritten Bullet Library Modal */}
+      <BulletLibraryModal
+        isOpen={bulletLibraryOpen}
+        onClose={() => {
+          setBulletLibraryOpen(false);
+          setBulletLibraryTarget(null);
+        }}
+        defaultRole={bulletLibraryTarget?.role || (basics as any).headline || ''}
+        onSelectBullet={handleApplyBulletFromLibrary}
+      />
+
+      {/* Floating Bottom Sheet Preview for Mobile Screens */}
+      <MobilePreviewDrawer
+        cvId={cvId}
+        title={title}
+        previewTimestamp={previewTimestamp}
+        onDownloadPdf={() => handleExport('pdf')}
+        onShare={async () => {
+          const shared = await shareViaNativeSheet({
+            title: `${title} - CV`,
+            url: shareUrl || window.location.href,
+          });
+          if (!shared) {
+            setShareModalOpen(true);
+          }
+        }}
+        isDownloading={Boolean(exportingFmt)}
       />
     </div>
   );

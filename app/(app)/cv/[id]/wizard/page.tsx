@@ -16,6 +16,9 @@ import { ImproveBulletsModal } from '@/components/features/ai/improve-bullets-mo
 import { ImproveSummaryModal } from '@/components/features/ai/improve-summary-modal';
 import { ImproveSkillsModal } from '@/components/features/ai/improve-skills-modal';
 import { SuggestStrengthsModal } from '@/components/features/ai/suggest-strengths-modal';
+import { CvStrengthMeter } from '@/components/features/cv/cv-strength-meter';
+import { BulletLibraryModal } from '@/components/features/cv/bullet-library-modal';
+import { shareViaNativeSheet, sharePdfFileViaNativeSheet } from '@/lib/mobile-share';
 import { toastError, toastSuccess } from '@/components/ui/toast';
 import { apiClient } from '@/lib/api-client';
 import { CvPreviewFrame } from '@/components/features/cv/cv-preview-frame';
@@ -44,6 +47,8 @@ import {
   Eye,
   FileEdit,
   Download,
+  BookOpen,
+  Share2,
 } from 'lucide-react';
 
 const STEPS = [
@@ -168,6 +173,8 @@ export default function CvWizardPage() {
   const [activeExpIndex, setActiveExpIndex] = useState<number | null>(null);
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
   const [strengthsModalOpen, setStrengthsModalOpen] = useState(false);
+  const [bulletLibraryOpen, setBulletLibraryOpen] = useState(false);
+  const [bulletLibraryTargetIndex, setBulletLibraryTargetIndex] = useState<number | null>(null);
   const [newSkillName, setNewSkillName] = useState('');
 
   // Fetch CV initial data
@@ -350,6 +357,18 @@ export default function CvWizardPage() {
     }
   };
 
+  const handleApplyBulletFromLibrary = (bulletText: string) => {
+    if (bulletLibraryTargetIndex === null) return;
+    const updated = [...experience];
+    if (updated[bulletLibraryTargetIndex]) {
+      const cur = updated[bulletLibraryTargetIndex].description || '';
+      updated[bulletLibraryTargetIndex].description = cur
+        ? `${cur}\n• ${bulletText}`
+        : `• ${bulletText}`;
+      setExperience(updated);
+    }
+  };
+
   const handleNext = async () => {
     if (currentStep === 1 && !basics.fullName.trim()) {
       toastError('Full name is required');
@@ -413,6 +432,7 @@ export default function CvWizardPage() {
               <Check className="h-3.5 w-3.5 stroke-[3]" /> All changes saved
             </span>
           )}
+          <CvStrengthMeter basics={basics} sections={constructSectionsPayload()} />
           <Button
             variant="ghost"
             size="sm"
@@ -900,20 +920,36 @@ export default function CvWizardPage() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
-                            Key Responsibilities & Achievements
+                            Key Responsibilities &amp; Achievements
                           </label>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setActiveExpIndex(idx);
-                              setBulletsModalOpen(true);
-                            }}
-                            leftIcon={<Sparkles className="h-3.5 w-3.5 text-primary-600" />}
-                          >
-                            AI Suggest Bullets
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setBulletLibraryTargetIndex(idx);
+                                setBulletLibraryOpen(true);
+                              }}
+                              leftIcon={<BookOpen className="h-3.5 w-3.5 text-slate-500" />}
+                              className="text-xs text-slate-600 dark:text-slate-400"
+                            >
+                              Library
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setActiveExpIndex(idx);
+                                setBulletsModalOpen(true);
+                              }}
+                              leftIcon={<Sparkles className="h-3.5 w-3.5 text-primary-600" />}
+                              className="text-xs"
+                            >
+                              AI Polish
+                            </Button>
+                          </div>
                         </div>
                         <Textarea
                           placeholder="Describe your impact, tools used, and measurable results..."
@@ -2264,6 +2300,20 @@ export default function CvWizardPage() {
             setStrengths([...strengths, item]);
           }
         }}
+      />
+
+      <BulletLibraryModal
+        isOpen={bulletLibraryOpen}
+        onClose={() => {
+          setBulletLibraryOpen(false);
+          setBulletLibraryTargetIndex(null);
+        }}
+        defaultRole={
+          bulletLibraryTargetIndex !== null && experience[bulletLibraryTargetIndex]
+            ? experience[bulletLibraryTargetIndex].role
+            : (basics as any).headline || ''
+        }
+        onSelectBullet={handleApplyBulletFromLibrary}
       />
     </div>
   );

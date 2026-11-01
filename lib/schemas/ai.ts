@@ -169,6 +169,59 @@ export const atsCheckAiOutputSchema = z.object({
   strengths: z.array(z.string()).max(5),
 });
 
+export const jobMatchSchema = z.object({
+  jobDescription: z.string().min(20, 'Job description must be at least 20 characters').max(10000),
+  jobTitle: z.string().max(120).optional().nullable(),
+  company: z.string().max(120).optional().nullable(),
+  cvContext: cvContextSchema,
+});
+export type JobMatchInput = z.infer<typeof jobMatchSchema>;
+
+export const jobMatchAiOutputSchema = z.object({
+  matchScore: z.number().min(0).max(100),
+  summary: z.string(),
+  keywordScores: z
+    .object({
+      skills: z.number().min(0).max(100),
+      experience: z.number().min(0).max(100),
+      education: z.number().min(0).max(100),
+    })
+    .optional(),
+  matchedKeywords: z.array(z.string()),
+  missingKeywords: z.array(
+    z.object({
+      keyword: z.string(),
+      category: z.string(),
+      recommendation: z.string(),
+    })
+  ),
+  tailoredSuggestions: z.array(
+    z.object({
+      section: z.string(),
+      currentWeakness: z.string(),
+      suggestedFix: z.string(),
+    })
+  ),
+});
+
+export const bulletLibrarySchema = z.object({
+  jobTitle: z.string().min(2, 'Job title is required').max(120),
+  category: z.string().max(80).optional().nullable(),
+  industry: z.string().max(80).optional().nullable(),
+});
+export type BulletLibraryInput = z.infer<typeof bulletLibrarySchema>;
+
+export const bulletLibraryAiOutputSchema = z.object({
+  jobTitle: z.string(),
+  bullets: z.array(
+    z.object({
+      category: z.string(),
+      text: z.string(),
+      impactType: z.string().optional().nullable(),
+    })
+  ),
+});
+
 export const templateSearchAiOutputSchema = z.object({
   results: z.array(
     z.object({

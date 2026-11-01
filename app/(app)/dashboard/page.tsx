@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toastSuccess, toastError, toastInfo } from '@/components/ui/toast';
 import { formatDate } from '@/lib/utils';
 import { CvPreviewFrame } from '@/components/features/cv/cv-preview-frame';
+import { shareViaNativeSheet, sharePdfFileViaNativeSheet } from '@/lib/mobile-share';
 import {
   PlusCircle,
   FileText,
@@ -82,6 +83,21 @@ export default function DashboardPage() {
       fetchCvs();
     } catch (err: any) {
       toastError('Duplication failed', err?.message);
+    }
+  };
+
+  const handleShareCv = async (cv: CvItem) => {
+    const publicUrl = cv.public_slug
+      ? `${window.location.origin}/cv/public/${cv.public_slug}`
+      : `${window.location.origin}/cv/${cv.id}/editor`;
+
+    const shared = await shareViaNativeSheet({
+      title: `${cv.title} - Resume`,
+      url: publicUrl,
+    });
+
+    if (!shared) {
+      handleToggleShare(cv);
     }
   };
 
@@ -429,12 +445,27 @@ export default function DashboardPage() {
                             type="button"
                             onClick={() => {
                               setMobileMenuId(null);
-                              handleToggleShare(cv);
+                              handleShareCv(cv);
                             }}
                             className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center gap-2"
                           >
-                            <Share2 className={cv.is_public ? 'h-3.5 w-3.5 text-emerald-500' : 'h-3.5 w-3.5'} />
-                            <span>{cv.is_public ? 'Make Private' : 'Make Public'}</span>
+                            <Share2 className="h-3.5 w-3.5 text-emerald-500" />
+                            <span>Share Link / Web</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setMobileMenuId(null);
+                              const shared = await sharePdfFileViaNativeSheet(cv.id, cv.title);
+                              if (!shared) {
+                                handleExportDownload(cv.id, 'pdf', cv.title);
+                              }
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-primary-600 dark:text-primary-400 font-semibold flex items-center gap-2"
+                          >
+                            <Share2 className="h-3.5 w-3.5" />
+                            <span>Share PDF to Apps</span>
                           </button>
 
                           <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
@@ -527,9 +558,9 @@ export default function DashboardPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleToggleShare(cv)}
+                    onClick={() => handleShareCv(cv)}
                     aria-label="Share"
-                    title={cv.is_public ? 'Make Private' : 'Make Public'}
+                    title="Share CV via Apps or Link"
                   >
                     <Share2 className={cv.is_public ? 'h-4 w-4 text-emerald-500' : 'h-4 w-4'} />
                   </Button>
@@ -550,7 +581,7 @@ export default function DashboardPage() {
                     </Button>
 
                     {activeDownloadMenu === cv.id && (
-                      <div className="absolute right-0 bottom-full mb-2 w-40 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-1 z-30 animate-in fade-in zoom-in-95 text-left text-xs">
+                      <div className="absolute right-0 bottom-full mb-2 w-48 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-1 z-30 animate-in fade-in zoom-in-95 text-left text-xs">
                         <button
                           type="button"
                           onClick={() => handleExportDownload(cv.id, 'pdf', cv.title)}
@@ -578,6 +609,21 @@ export default function DashboardPage() {
                           className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium"
                         >
                           Download as JPG
+                        </button>
+                        <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setActiveDownloadMenu(null);
+                            const shared = await sharePdfFileViaNativeSheet(cv.id, cv.title);
+                            if (!shared) {
+                              handleExportDownload(cv.id, 'pdf', cv.title);
+                            }
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-primary-600 dark:text-primary-400 font-semibold flex items-center justify-between"
+                        >
+                          <span>Share PDF to Apps</span>
+                          <Share2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     )}
