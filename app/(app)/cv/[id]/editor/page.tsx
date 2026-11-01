@@ -15,10 +15,12 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ImproveSummaryModal } from '@/components/features/ai/improve-summary-modal';
 import { ImproveBulletsModal } from '@/components/features/ai/improve-bullets-modal';
 import { ImproveSkillsModal } from '@/components/features/ai/improve-skills-modal';
+import { SuggestStrengthsModal } from '@/components/features/ai/suggest-strengths-modal';
 import { AtsCheckModal } from '@/components/features/ai/ats-check-modal';
 import { TemplateRecommendModal } from '@/components/features/ai/template-recommend-modal';
 import { toastError, toastSuccess } from '@/components/ui/toast';
 import { apiClient, triggerBlobDownload } from '@/lib/api-client';
+import { compressImageTo100KB } from '@/lib/image-compressor';
 import {
   DndContext,
   closestCenter,
@@ -38,6 +40,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   ArrowLeft,
+  ArrowUp,
+  ArrowDown,
   Download,
   Share2,
   Sparkles,
@@ -81,11 +85,19 @@ function SortableSectionItem({
   children,
   onToggleVisible,
   onDelete,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown,
 }: {
   section: any;
   children: React.ReactNode;
   onToggleVisible: () => void;
   onDelete: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: section.id });
@@ -109,31 +121,61 @@ function SortableSectionItem({
       }`}
     >
       <div className="p-3.5 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
           <button
             type="button"
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 text-slate-400 hover:text-slate-600 rounded"
+            className="cursor-grab active:cursor-grabbing p-1 text-slate-400 hover:text-slate-600 rounded shrink-0"
             title="Drag to reorder"
           >
             <GripVertical className="h-4 w-4" />
           </button>
+          {onMoveUp && (
+            <button
+              type="button"
+              onClick={onMoveUp}
+              disabled={!canMoveUp}
+              className={`p-1 rounded shrink-0 transition-colors ${
+                canMoveUp
+                  ? 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700'
+                  : 'text-slate-200 dark:text-slate-800 cursor-not-allowed'
+              }`}
+              title="Move section up"
+            >
+              <ArrowUp className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {onMoveDown && (
+            <button
+              type="button"
+              onClick={onMoveDown}
+              disabled={!canMoveDown}
+              className={`p-1 rounded shrink-0 transition-colors ${
+                canMoveDown
+                  ? 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700'
+                  : 'text-slate-200 dark:text-slate-800 cursor-not-allowed'
+              }`}
+              title="Move section down"
+            >
+              <ArrowDown className="h-3.5 w-3.5" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setExpanded(!expanded)}
-            className="text-left font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200 hover:text-primary-600 flex items-center gap-1.5"
+            className="text-left font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200 hover:text-primary-600 flex items-center gap-1.5 truncate"
           >
-            <span>{section.title}</span>
+            <span className="truncate">{section.title}</span>
             <ChevronDown
-              className={`h-3.5 w-3.5 transition-transform ${
+              className={`h-3.5 w-3.5 shrink-0 transition-transform ${
                 expanded ? 'rotate-180' : ''
               }`}
             />
           </button>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={onToggleVisible}
@@ -281,6 +323,7 @@ export default function CvEditorPage() {
     description: string;
   } | null>(null);
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
+  const [strengthsModalOpen, setStrengthsModalOpen] = useState(false);
   const [atsModalOpen, setAtsModalOpen] = useState(false);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
 
@@ -381,6 +424,44 @@ export default function CvEditorPage() {
       setSections(reordered);
       triggerAutosave(undefined, undefined, undefined, reordered, undefined);
     }
+  };
+
+  // 1-Click Move Section Up / Down (Mobile & Desktop Friendly)
+  const handleMoveSection = (secIdx: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? secIdx - 1 : secIdx + 1;
+    if (targetIdx < 0 || targetIdx >= sections.length) return;
+    const updated = [...sections];
+    const [moved] = updated.splice(secIdx, 1);
+    updated.splice(targetIdx, 0, moved);
+    setSections(updated);
+    triggerAutosave(undefined, undefined, undefined, updated, undefined);
+  };
+
+  // 1-Click Move Item Up / Down within any section
+  const handleMoveItem = (secIdx: number, itemIdx: number, direction: 'up' | 'down') => {
+    const items = [...(sections[secIdx].items || [])];
+    const targetIdx = direction === 'up' ? itemIdx - 1 : itemIdx + 1;
+    if (targetIdx < 0 || targetIdx >= items.length) return;
+    const [moved] = items.splice(itemIdx, 1);
+    items.splice(targetIdx, 0, moved);
+    const updated = [...sections];
+    updated[secIdx] = { ...updated[secIdx], items };
+    setSections(updated);
+    triggerAutosave(undefined, undefined, undefined, updated, undefined);
+  };
+
+  // 1-Click Duplicate Item within any section
+  const handleDuplicateItem = (secIdx: number, itemIdx: number) => {
+    const items = [...(sections[secIdx].items || [])];
+    const itemToClone = items[itemIdx];
+    if (!itemToClone) return;
+    const cloned = JSON.parse(JSON.stringify(itemToClone));
+    items.splice(itemIdx + 1, 0, cloned);
+    const updated = [...sections];
+    updated[secIdx] = { ...updated[secIdx], items };
+    setSections(updated);
+    triggerAutosave(undefined, undefined, undefined, updated, undefined);
+    toastSuccess('Item duplicated');
   };
 
   // Toggle Section Visibility
@@ -510,57 +591,49 @@ export default function CvEditorPage() {
     }
   };
 
-  // Photo upload handler with strict 100 KB limit
+  // Photo upload handler: accepts up to 600 KB and auto-compresses to < 100 KB
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const MAX_KB = 100;
-    const MAX_BYTES = MAX_KB * 1024;
-    if (file.size > MAX_BYTES) {
-      toastError(
-        'Photo too large',
-        `Maximum photo size is ${MAX_KB} KB. Your file is ${(file.size / 1024).toFixed(1)} KB.`
-      );
-      if (photoInputRef.current) photoInputRef.current.value = '';
-      return;
-    }
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
 
     try {
-      // 1. Instant local base64 preview so user sees it right away
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const dataUrl = reader.result as string;
-        const updatedBasics = { ...basics, photoUrl: dataUrl };
-        const updatedConfig = { ...config, showPhoto: true };
-        setBasics(updatedBasics);
-        setConfig(updatedConfig);
-        triggerAutosave(undefined, undefined, updatedBasics, undefined, updatedConfig);
-        toastSuccess('Profile photo updated');
+      // Auto-compress and scale to strictly < 100 KB
+      const { file: compressedFile, dataUrl, originalSizeKB, compressedSizeKB } =
+        await compressImageTo100KB(rawFile);
 
-        // 2. Upload to Cloudinary in background to store CDN URL if available
-        try {
-          const formData = new FormData();
-          formData.append('file', file);
-          const res = await fetch('/api/upload/photo', {
-            method: 'POST',
-            body: formData,
-          });
-          if (res.ok) {
-            const json = await res.json();
-            if (json?.data?.photoUrl) {
-              const cdnBasics = { ...basics, photoUrl: json.data.photoUrl };
-              setBasics(cdnBasics);
-              triggerAutosave(undefined, undefined, cdnBasics, undefined, undefined);
-            }
+      const updatedBasics = { ...basics, photoUrl: dataUrl };
+      const updatedConfig = { ...config, showPhoto: true };
+      setBasics(updatedBasics);
+      setConfig(updatedConfig);
+      triggerAutosave(undefined, undefined, updatedBasics, undefined, updatedConfig);
+      toastSuccess(
+        'Profile photo updated',
+        originalSizeKB > 95
+          ? `Optimized from ${originalSizeKB} KB to ${compressedSizeKB} KB`
+          : undefined
+      );
+
+      // Upload to Cloudinary/storage in background
+      try {
+        const formData = new FormData();
+        formData.append('file', compressedFile);
+        const res = await fetch('/api/upload/photo', {
+          method: 'POST',
+          body: formData,
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data?.photoUrl) {
+            const cdnBasics = { ...basics, photoUrl: json.data.photoUrl };
+            setBasics(cdnBasics);
+            triggerAutosave(undefined, undefined, cdnBasics, undefined, undefined);
           }
-        } catch {
-          // If network upload fails, local base64 dataUrl is already safely saved
         }
-      };
-      reader.readAsDataURL(file);
+      } catch {
+        // Local base64 dataUrl is already safely saved in state and DB
+      }
     } catch (err: any) {
-      toastError('Failed to read image', err.message);
+      toastError('Photo upload failed', err.message || 'Please select an image under 600 KB.');
     } finally {
       if (photoInputRef.current) photoInputRef.current.value = '';
     }
@@ -616,7 +689,7 @@ export default function CvEditorPage() {
         <div className="flex items-center gap-3 min-w-0">
           <Link href="/dashboard">
             <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
-              Dashboard
+              <span className="hidden sm:inline">Dashboard</span>
             </Button>
           </Link>
 
@@ -680,6 +753,20 @@ export default function CvEditorPage() {
             </button>
           </div>
 
+          {/* Step Wizard Shortcut */}
+          <Link href={`/cv/${cvId}/wizard`}>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Sparkles className="h-4 w-4 text-primary-600 dark:text-primary-400" />}
+              className="text-xs font-semibold text-primary-700 dark:text-primary-300 border-primary-200 dark:border-primary-800 hover:bg-primary-50 dark:hover:bg-primary-950/40"
+              title="Open guided step-by-step wizard"
+            >
+              <span className="hidden sm:inline">Step Wizard</span>
+              <span className="sm:hidden">Wizard</span>
+            </Button>
+          </Link>
+
           {/* Version History Link */}
           <Link href={`/cv/${cvId}/versions`}>
             <Button variant="ghost" size="sm" leftIcon={<History className="h-4 w-4" />}>
@@ -719,6 +806,14 @@ export default function CvEditorPage() {
                 >
                   <Sparkles className="h-3.5 w-3.5 text-primary-500" />
                   <span>Recommend Skills</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStrengthsModalOpen(true)}
+                  className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-primary-500" />
+                  <span>Suggest Strengths</span>
                 </button>
                 <button
                   type="button"
@@ -984,7 +1079,7 @@ export default function CvEditorPage() {
                         )}
                       </div>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        PNG, JPEG, or WebP. 100 KB limit. Photo automatically adjusts to your chosen position.
+                        PNG, JPEG, or WebP up to 600 KB (auto-compressed to &lt; 100 KB). Photo automatically adjusts to your chosen position.
                       </p>
                     </div>
                   </div>
@@ -1066,6 +1161,10 @@ export default function CvEditorPage() {
                           section={section}
                           onToggleVisible={() => toggleSectionVisibility(section.id)}
                           onDelete={() => setSectionToDelete(section.id)}
+                          onMoveUp={() => handleMoveSection(secIdx, 'up')}
+                          onMoveDown={() => handleMoveSection(secIdx, 'down')}
+                          canMoveUp={secIdx > 0}
+                          canMoveDown={secIdx < sections.length - 1}
                         >
                           {/* Experience Section Body */}
                           {section.type === 'experience' && (
@@ -1076,23 +1175,60 @@ export default function CvEditorPage() {
                                   className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-3"
                                 >
                                   <div className="flex justify-between items-center">
-                                    <span className="text-xs font-bold text-slate-500">
-                                      #{itemIdx + 1}
+                                    <span className="text-xs font-bold text-slate-500 truncate max-w-[200px]">
+                                      #{itemIdx + 1} {item.role ? `• ${item.role}` : ''}
                                     </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const updatedSecs = [...sections];
-                                        updatedSecs[secIdx].items = updatedSecs[secIdx].items.filter(
-                                          (_: any, i: number) => i !== itemIdx
-                                        );
-                                        setSections(updatedSecs);
-                                        triggerAutosave(undefined, undefined, undefined, updatedSecs, undefined);
-                                      }}
-                                      className="text-slate-400 hover:text-rose-500"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleMoveItem(secIdx, itemIdx, 'up')}
+                                        disabled={itemIdx === 0}
+                                        className={`p-1 rounded transition-colors ${
+                                          itemIdx > 0
+                                            ? 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                            : 'text-slate-200 dark:text-slate-800 cursor-not-allowed'
+                                        }`}
+                                        title="Move up"
+                                      >
+                                        <ArrowUp className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleMoveItem(secIdx, itemIdx, 'down')}
+                                        disabled={itemIdx === (section.items || []).length - 1}
+                                        className={`p-1 rounded transition-colors ${
+                                          itemIdx < (section.items || []).length - 1
+                                            ? 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                            : 'text-slate-200 dark:text-slate-800 cursor-not-allowed'
+                                        }`}
+                                        title="Move down"
+                                      >
+                                        <ArrowDown className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDuplicateItem(secIdx, itemIdx)}
+                                        className="p-1 text-slate-400 hover:text-primary-600 transition-colors"
+                                        title="Duplicate role"
+                                      >
+                                        <Copy className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const updatedSecs = [...sections];
+                                          updatedSecs[secIdx].items = updatedSecs[secIdx].items.filter(
+                                            (_: any, i: number) => i !== itemIdx
+                                          );
+                                          setSections(updatedSecs);
+                                          triggerAutosave(undefined, undefined, undefined, updatedSecs, undefined);
+                                        }}
+                                        className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                                        title="Delete role"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
                                   </div>
 
                                   <div className="grid grid-cols-2 gap-2">
@@ -1208,8 +1344,64 @@ export default function CvEditorPage() {
                                   className="p-3 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2"
                                 >
                                   <div className="flex justify-between items-center">
+                                    <span className="text-xs font-bold text-slate-500 truncate max-w-[200px]">
+                                      #{itemIdx + 1} {item.degree ? `• ${item.degree}` : ''}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleMoveItem(secIdx, itemIdx, 'up')}
+                                        disabled={itemIdx === 0}
+                                        className={`p-1 rounded transition-colors ${
+                                          itemIdx > 0
+                                            ? 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                            : 'text-slate-200 dark:text-slate-800 cursor-not-allowed'
+                                        }`}
+                                        title="Move up"
+                                      >
+                                        <ArrowUp className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleMoveItem(secIdx, itemIdx, 'down')}
+                                        disabled={itemIdx === (section.items || []).length - 1}
+                                        className={`p-1 rounded transition-colors ${
+                                          itemIdx < (section.items || []).length - 1
+                                            ? 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                            : 'text-slate-200 dark:text-slate-800 cursor-not-allowed'
+                                        }`}
+                                        title="Move down"
+                                      >
+                                        <ArrowDown className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDuplicateItem(secIdx, itemIdx)}
+                                        className="p-1 text-slate-400 hover:text-primary-600 transition-colors"
+                                        title="Duplicate education"
+                                      >
+                                        <Copy className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const updatedSecs = [...sections];
+                                          updatedSecs[secIdx].items = updatedSecs[secIdx].items.filter(
+                                            (_: any, i: number) => i !== itemIdx
+                                          );
+                                          setSections(updatedSecs);
+                                          triggerAutosave(undefined, undefined, undefined, updatedSecs, undefined);
+                                        }}
+                                        className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                                        title="Delete education"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
                                     <Input
-                                      placeholder="Institution"
+                                      placeholder="Institution / School"
                                       value={item.institution || ''}
                                       onChange={(e) => {
                                         const updatedSecs = [...sections];
@@ -1218,28 +1410,24 @@ export default function CvEditorPage() {
                                         triggerAutosave(undefined, undefined, undefined, updatedSecs, undefined);
                                       }}
                                     />
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const updatedSecs = [...sections];
-                                        updatedSecs[secIdx].items = updatedSecs[secIdx].items.filter(
-                                          (_: any, i: number) => i !== itemIdx
-                                        );
-                                        setSections(updatedSecs);
-                                        triggerAutosave(undefined, undefined, undefined, updatedSecs, undefined);
-                                      }}
-                                      className="p-1 text-slate-400 hover:text-rose-500"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-2">
                                     <Input
                                       placeholder="Degree"
                                       value={item.degree || ''}
                                       onChange={(e) => {
                                         const updatedSecs = [...sections];
                                         updatedSecs[secIdx].items[itemIdx].degree = e.target.value;
+                                        setSections(updatedSecs);
+                                        triggerAutosave(undefined, undefined, undefined, updatedSecs, undefined);
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <Input
+                                      placeholder="Field of Study"
+                                      value={item.field || ''}
+                                      onChange={(e) => {
+                                        const updatedSecs = [...sections];
+                                        updatedSecs[secIdx].items[itemIdx].field = e.target.value;
                                         setSections(updatedSecs);
                                         triggerAutosave(undefined, undefined, undefined, updatedSecs, undefined);
                                       }}
@@ -1331,20 +1519,57 @@ export default function CvEditorPage() {
                                       <span className="text-[11px] font-bold uppercase text-slate-500">
                                         Item #{itemIdx + 1}
                                       </span>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const updatedSecs = [...sections];
-                                          updatedSecs[secIdx].items = updatedSecs[secIdx].items.filter(
-                                            (_: any, i: number) => i !== itemIdx
-                                          );
-                                          setSections(updatedSecs);
-                                          triggerAutosave(undefined, undefined, undefined, updatedSecs, undefined);
-                                        }}
-                                        className="p-1 text-slate-400 hover:text-rose-500"
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                      </button>
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleMoveItem(secIdx, itemIdx, 'up')}
+                                          disabled={itemIdx === 0}
+                                          className={`p-1 rounded transition-colors ${
+                                            itemIdx > 0
+                                              ? 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                              : 'text-slate-200 dark:text-slate-800 cursor-not-allowed'
+                                          }`}
+                                          title="Move up"
+                                        >
+                                          <ArrowUp className="h-3.5 w-3.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleMoveItem(secIdx, itemIdx, 'down')}
+                                          disabled={itemIdx === (section.items || []).length - 1}
+                                          className={`p-1 rounded transition-colors ${
+                                            itemIdx < (section.items || []).length - 1
+                                              ? 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                              : 'text-slate-200 dark:text-slate-800 cursor-not-allowed'
+                                          }`}
+                                          title="Move down"
+                                        >
+                                          <ArrowDown className="h-3.5 w-3.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDuplicateItem(secIdx, itemIdx)}
+                                          className="p-1 text-slate-400 hover:text-primary-600 transition-colors"
+                                          title="Duplicate item"
+                                        >
+                                          <Copy className="h-3.5 w-3.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const updatedSecs = [...sections];
+                                            updatedSecs[secIdx].items = updatedSecs[secIdx].items.filter(
+                                              (_: any, i: number) => i !== itemIdx
+                                            );
+                                            setSections(updatedSecs);
+                                            triggerAutosave(undefined, undefined, undefined, updatedSecs, undefined);
+                                          }}
+                                          className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                                          title="Delete item"
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
                                     </div>
 
                                     {/* Strengths Item Editor */}
@@ -1496,28 +1721,40 @@ export default function CvEditorPage() {
                                       )}
                                   </div>
                                 ))}
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  fullWidth
-                                  onClick={() => {
-                                    const updatedSecs = [...sections];
-                                    const blankItem =
-                                      section.type === 'strengths'
-                                        ? { title: 'New Strength', description: '' }
-                                        : section.type === 'interests'
-                                        ? { name: 'New Interest', description: '' }
-                                        : section.type === 'references'
-                                        ? { name: 'Reference Name', relationship: '', company: '', email: '', phone: '' }
-                                        : { name: 'New Item', description: '' };
-                                    updatedSecs[secIdx].items.push(blankItem);
-                                    setSections(updatedSecs);
-                                    triggerAutosave(undefined, undefined, undefined, updatedSecs, undefined);
-                                  }}
-                                  leftIcon={<Plus className="h-3.5 w-3.5" />}
-                                >
-                                  Add Item
-                                </Button>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    fullWidth
+                                    onClick={() => {
+                                      const updatedSecs = [...sections];
+                                      const blankItem =
+                                        section.type === 'strengths'
+                                          ? { title: 'New Strength', description: '' }
+                                          : section.type === 'interests'
+                                          ? { name: 'New Interest', description: '' }
+                                          : section.type === 'references'
+                                          ? { name: 'Reference Name', relationship: '', company: '', email: '', phone: '' }
+                                          : { name: 'New Item', description: '' };
+                                      updatedSecs[secIdx].items.push(blankItem);
+                                      setSections(updatedSecs);
+                                      triggerAutosave(undefined, undefined, undefined, updatedSecs, undefined);
+                                    }}
+                                    leftIcon={<Plus className="h-3.5 w-3.5" />}
+                                  >
+                                    Add Item
+                                  </Button>
+                                  {section.type === 'strengths' && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setStrengthsModalOpen(true)}
+                                      leftIcon={<Sparkles className="h-3.5 w-3.5 text-primary-600" />}
+                                    >
+                                      AI Suggest
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                             )}
                         </SortableSectionItem>
@@ -1975,11 +2212,32 @@ export default function CvEditorPage() {
         variant="danger"
       />
 
-      {/* AI Modals */}
+      {/* AI Modals with Full CV Context */}
       <ImproveSummaryModal
         isOpen={summaryModalOpen}
         onClose={() => setSummaryModalOpen(false)}
         currentSummary={basics.summary || ''}
+        cvContext={{
+          fullName: basics.fullName,
+          headline: (basics as any).headline || (sections.find((s) => s.type === 'experience')?.items?.[0]?.role) || '',
+          summary: basics.summary,
+          experiences: (sections.find((s) => s.type === 'experience')?.items || []).map((e: any) => ({
+            role: e.role,
+            company: e.company,
+            description: e.description,
+            startDate: e.startDate,
+            endDate: e.endDate,
+          })),
+          education: (sections.find((s) => s.type === 'education')?.items || []).map((ed: any) => ({
+            degree: ed.degree,
+            institution: ed.institution,
+            field: ed.field,
+            graduationDate: ed.endDate,
+          })),
+          skills: (sections.find((s) => s.type === 'skills')?.items || []).map((s: any) => s.name || s),
+          strengths: (sections.find((s) => s.type === 'strengths')?.items || []).map((st: any) => st.name || st.title || st),
+          certifications: (sections.find((s) => s.type === 'certifications')?.items || []).map((c: any) => c.name || c.title || c),
+        }}
         onApply={(text) => handleBasicsChange('summary', text)}
       />
 
@@ -1993,6 +2251,12 @@ export default function CvEditorPage() {
           currentDescription={activeBulletTarget.description}
           role={activeBulletTarget.role}
           company={activeBulletTarget.company}
+          cvContext={{
+            fullName: basics.fullName,
+            headline: (basics as any).headline || activeBulletTarget.role || '',
+            skills: (sections.find((s) => s.type === 'skills')?.items || []).map((s: any) => s.name || s),
+            strengths: (sections.find((s) => s.type === 'strengths')?.items || []).map((st: any) => st.name || st.title || st),
+          }}
           onApply={(bullet) => {
             const { sectionId, itemIndex } = activeBulletTarget;
             const updated = [...sections];
@@ -2013,6 +2277,21 @@ export default function CvEditorPage() {
         currentSkills={
           sections.find((s) => s.type === 'skills')?.items?.map((it: any) => it.name) || []
         }
+        cvContext={{
+          fullName: basics.fullName,
+          headline: (basics as any).headline || (sections.find((s) => s.type === 'experience')?.items?.[0]?.role) || '',
+          experiences: (sections.find((s) => s.type === 'experience')?.items || []).map((e: any) => ({
+            role: e.role,
+            company: e.company,
+            description: e.description,
+          })),
+          education: (sections.find((s) => s.type === 'education')?.items || []).map((ed: any) => ({
+            degree: ed.degree,
+            institution: ed.institution,
+            field: ed.field,
+          })),
+          skills: (sections.find((s) => s.type === 'skills')?.items || []).map((s: any) => s.name || s),
+        }}
         onAddSkill={(skill) => {
           const updated = [...sections];
           let skillSec = updated.find((s) => s.type === 'skills');
@@ -2028,6 +2307,50 @@ export default function CvEditorPage() {
           }
           if (!skillSec.items.some((i: any) => i.name.toLowerCase() === skill.name.toLowerCase())) {
             skillSec.items.push(skill);
+            setSections(updated);
+            triggerAutosave(undefined, undefined, undefined, updated, undefined);
+          }
+        }}
+      />
+
+      <SuggestStrengthsModal
+        isOpen={strengthsModalOpen}
+        onClose={() => setStrengthsModalOpen(false)}
+        currentStrengths={
+          sections.find((s) => s.type === 'strengths')?.items?.map((st: any) => st.title || st.name) || []
+        }
+        cvContext={{
+          fullName: basics.fullName,
+          headline: (basics as any).headline || (sections.find((s) => s.type === 'experience')?.items?.[0]?.role) || '',
+          summary: basics.summary,
+          experiences: (sections.find((s) => s.type === 'experience')?.items || []).map((e: any) => ({
+            role: e.role,
+            company: e.company,
+            description: e.description,
+          })),
+          education: (sections.find((s) => s.type === 'education')?.items || []).map((ed: any) => ({
+            degree: ed.degree,
+            institution: ed.institution,
+            field: ed.field,
+          })),
+          skills: (sections.find((s) => s.type === 'skills')?.items || []).map((s: any) => s.name || s),
+          strengths: (sections.find((s) => s.type === 'strengths')?.items || []).map((st: any) => st.title || st.name || st),
+        }}
+        onAddStrength={(strength) => {
+          const updated = [...sections];
+          let strSec = updated.find((s) => s.type === 'strengths');
+          if (!strSec) {
+            strSec = {
+              id: `strengths-${Date.now()}`,
+              type: 'strengths',
+              title: 'Strengths & Highlights',
+              visible: true,
+              items: [],
+            };
+            updated.push(strSec);
+          }
+          if (!strSec.items.some((i: any) => (i.title || i.name || '').toLowerCase() === strength.title.toLowerCase())) {
+            strSec.items.push(strength);
             setSections(updated);
             triggerAutosave(undefined, undefined, undefined, updated, undefined);
           }

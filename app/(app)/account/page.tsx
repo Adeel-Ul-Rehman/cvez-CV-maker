@@ -246,10 +246,10 @@ export default function AccountPage() {
               <FileDropzone
                 onFileSelect={(file) => setAvatarFile(file)}
                 currentImageUrl={user?.avatarUrl}
-                maxSizeKB={100}
+                maxSizeKB={600}
               />
               <p className="text-[11px] text-slate-400 mt-1.5">
-                Max 100 KB limit. Images are automatically optimized and compressed for lightning-fast loading.
+                Up to 600 KB. Automatically compressed to &lt; 100 KB for lightning-fast loading and optimal performance.
               </p>
             </div>
           </div>

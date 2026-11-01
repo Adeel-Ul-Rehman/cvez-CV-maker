@@ -4,6 +4,7 @@ import { handleApiError } from '@/lib/errors';
 import { aiCompleteJson, logAiUsage } from '@/lib/ai';
 import { enforceAiRateLimit } from '@/lib/ai/rate-limit';
 import { improveSkillsSchema, improveSkillsAiOutputSchema } from '@/lib/schemas/ai';
+import { formatCvContextForPrompt } from '@/lib/ai/cv-context-helper';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     enforceAiRateLimit(userId, 'improve_skills');
 
     const body = await req.json();
-    const { currentSkills, jobTitle, jobDescription } = improveSkillsSchema.parse(body);
+    const { currentSkills, jobTitle, jobDescription, cvContext } = improveSkillsSchema.parse(body);
 
     const existingNormalized = new Set(
       (currentSkills || []).map((s) => s.trim().toLowerCase())
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
 Your task is to recommend 5-10 relevant skills, tools, frameworks, or competencies that would strengthen this candidate's profile for their target role.
 Guidelines:
 1. Do NOT suggest any skills that the user already possesses.
-2. Select high-value, contemporary hard/technical and domain skills aligned with industry standards.
+2. Select high-value, contemporary hard/technical and domain skills aligned with industry standards and the candidate's actual work experience and background.
 3. You must return ONLY a JSON object with this shape:
 {
   "suggested": [
@@ -40,7 +41,9 @@ Guidelines:
   ]
 }`;
 
-    const userPrompt = `${jobTitle ? `Target Role/Title: ${jobTitle}\n` : ''}${
+    const cvContextText = formatCvContextForPrompt(cvContext);
+
+    const userPrompt = `${cvContextText}${jobTitle ? `Target Role/Title: ${jobTitle}\n` : ''}${
       jobDescription ? `Target Job Description:\n${jobDescription}\n` : ''
     }Current Skills (DO NOT SUGGEST THESE):
 ${currentSkills.join(', ') || 'None provided'}`;

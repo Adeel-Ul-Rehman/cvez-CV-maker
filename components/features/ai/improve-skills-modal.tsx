@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { toastError, toastSuccess } from '@/components/ui/toast';
 import { apiClient } from '@/lib/api-client';
-import { Sparkles, Plus, Check } from 'lucide-react';
+import { Sparkles, Plus, Check, Layers } from 'lucide-react';
+import { CvContext } from '@/lib/schemas/ai';
 
 interface SuggestedSkill {
   name: string;
@@ -21,6 +22,7 @@ interface ImproveSkillsModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentSkills: string[];
+  cvContext?: CvContext | null;
   onAddSkill: (skill: { name: string; level?: 'beginner' | 'intermediate' | 'advanced' | 'expert' | null }) => void;
 }
 
@@ -28,6 +30,7 @@ export function ImproveSkillsModal({
   isOpen,
   onClose,
   currentSkills,
+  cvContext,
   onAddSkill,
 }: ImproveSkillsModalProps) {
   const [jobTitle, setJobTitle] = useState('');
@@ -36,6 +39,21 @@ export function ImproveSkillsModal({
   const [suggestions, setSuggestions] = useState<SuggestedSkill[]>([]);
   const [addedSkills, setAddedSkills] = useState<Set<string>>(new Set());
   const [provider, setProvider] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (isOpen && !jobTitle) {
+      if (cvContext?.headline) {
+        setJobTitle(cvContext.headline);
+      } else if (cvContext?.experiences && cvContext.experiences.length > 0 && cvContext.experiences[0].role) {
+        setJobTitle(cvContext.experiences[0].role);
+      }
+    }
+  }, [isOpen, cvContext, jobTitle]);
+
+  const hasBackgroundContext = Boolean(
+    (cvContext?.experiences && cvContext.experiences.length > 0) ||
+    (cvContext?.education && cvContext.education.length > 0)
+  );
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -48,6 +66,7 @@ export function ImproveSkillsModal({
         currentSkills,
         jobTitle: jobTitle.trim() || undefined,
         jobDescription: jobDescription.trim() || undefined,
+        cvContext: cvContext || undefined,
       });
 
       if (res.data?.suggested) {
@@ -80,6 +99,17 @@ export function ImproveSkillsModal({
       size="lg"
     >
       <div className="space-y-4">
+        {hasBackgroundContext && (
+          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-primary-50 dark:bg-primary-950/40 border border-primary-200 dark:border-primary-800 text-xs text-primary-800 dark:text-primary-300">
+            <Layers className="h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
+            <span>
+              <strong>Smart CV Context active:</strong> AI will analyze missing skills based on your{' '}
+              {cvContext?.experiences?.length ? `${cvContext.experiences.length} past job(s)` : ''}
+              {cvContext?.education?.length ? ` and education in ${cvContext.education[0]?.field || cvContext.education[0]?.degree || 'your field'}` : ''}.
+            </span>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
             label="Target Role / Domain"

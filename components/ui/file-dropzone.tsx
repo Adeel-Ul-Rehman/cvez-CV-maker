@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { UploadCloud, X, Image as ImageIcon } from 'lucide-react';
+import { UploadCloud, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toastError } from './toast';
+import { toastError, toastSuccess } from './toast';
+import { compressImageTo100KB } from '@/lib/image-compressor';
 
 export interface FileDropzoneProps {
   onFileSelect: (file: File) => void;
@@ -13,73 +14,16 @@ export interface FileDropzoneProps {
   className?: string;
 }
 
-async function optimizeAvatar(file: File, maxKB: number): Promise<File> {
-  if (file.size <= maxKB * 1024 && (file.type === 'image/jpeg' || file.type === 'image/webp')) {
-    return file;
-  }
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        const maxDim = 400; // Perfect crisp dimensions for avatar circles
-        if (width > maxDim || height > maxDim) {
-          if (width > height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                const optimized = new File(
-                  [blob],
-                  file.name.replace(/\.[^/.]+$/, '') + '.jpg',
-                  { type: 'image/jpeg' }
-                );
-                resolve(optimized);
-              } else {
-                resolve(file);
-              }
-            },
-            'image/jpeg',
-            0.82
-          );
-        } else {
-          resolve(file);
-        }
-      };
-      img.onerror = () => resolve(file);
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = () => resolve(file);
-    reader.readAsDataURL(file);
-  });
-}
-
 export function FileDropzone({
   onFileSelect,
   currentImageUrl,
-  maxSizeKB = 100,
-  maxSizeMB,
+  maxSizeKB = 600,
   className,
 }: FileDropzoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
+  const [isCompressing, setIsCompressing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const effectiveMaxKB = maxSizeKB || (maxSizeMB ? maxSizeMB * 1024 : 100);
 
   React.useEffect(() => {
     if (currentImageUrl) {
@@ -93,17 +37,34 @@ export function FileDropzone({
       return;
     }
 
-    // Auto-optimize/compress avatar image to under effectiveMaxKB
-    const file = await optimizeAvatar(rawFile, effectiveMaxKB);
-
-    if (file.size > effectiveMaxKB * 1024) {
-      toastError('File too large', `Image must be smaller than ${effectiveMaxKB}KB.`);
+    if (rawFile.size > maxSizeKB * 1024) {
+      toastError(
+        'File too large',
+        `Maximum upload size is ${maxSizeKB} KB. Your file is ${Math.round(rawFile.size / 1024)} KB.`
+      );
       return;
     }
 
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
-    onFileSelect(file);
+    try {
+      setIsCompressing(true);
+      // Auto-compress and resize image to strictly under 100 KB
+      const { file: compressedFile, dataUrl, originalSizeKB, compressedSizeKB } =
+        await compressImageTo100KB(rawFile);
+
+      setPreviewUrl(dataUrl);
+      onFileSelect(compressedFile);
+
+      if (originalSizeKB > 95) {
+        toastSuccess(
+          'Image optimized',
+          `Compressed from ${originalSizeKB} KB to ${compressedSizeKB} KB (< 100 KB)`
+        );
+      }
+    } catch (err: any) {
+      toastError('Image processing failed', err.message || 'Could not compress image.');
+    } finally {
+      setIsCompressing(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -173,9 +134,11 @@ export function FileDropzone({
             <UploadCloud className="h-6 w-6" />
           </div>
           <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-            Click to upload <span className="font-normal text-slate-500">or drag & drop</span>
+            {isCompressing ? 'Optimizing photo...' : 'Click to upload or drag & drop'}
           </p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">PNG, JPG, or WEBP (max {maxSizeMB}MB)</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+            PNG, JPG up to {maxSizeKB} KB (auto-compressed to &lt; 100 KB)
+          </p>
         </div>
       )}
     </div>

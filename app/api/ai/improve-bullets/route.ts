@@ -4,6 +4,7 @@ import { handleApiError } from '@/lib/errors';
 import { aiCompleteJson, logAiUsage } from '@/lib/ai';
 import { enforceAiRateLimit } from '@/lib/ai/rate-limit';
 import { improveBulletsSchema, improveBulletsAiOutputSchema } from '@/lib/schemas/ai';
+import { formatCvContextForPrompt } from '@/lib/ai/cv-context-helper';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     enforceAiRateLimit(userId, 'improve_bullets');
 
     const body = await req.json();
-    const { description, role, company, jobDescription } = improveBulletsSchema.parse(body);
+    const { description, role, company, jobDescription, cvContext } = improveBulletsSchema.parse(body);
 
     const systemPrompt = `You are a high-level technical resume writer and career coach.
 Your task is to transform work experience descriptions into 3-5 impactful resume bullet points.
@@ -26,7 +27,8 @@ Guidelines:
 1. Each bullet point must begin with a strong, active past-tense action verb (e.g., "Architected", "Spearheaded", "Engineered", "Reduced", "Accelerated").
 2. Follow the STAR / Action-Result framework, emphasizing quantifiable impact, metrics, or technologies where possible.
 3. Keep each bullet under 300 characters.
-4. Provide a brief rationale (under 120 characters) explaining the improvement.
+4. Align suggestions with the candidate's career level, skills, and industry background if provided.
+5. Provide a brief rationale (under 120 characters) explaining the improvement.
 You must return ONLY a JSON object with this shape:
 {
   "suggestions": [
@@ -37,10 +39,13 @@ You must return ONLY a JSON object with this shape:
   ]
 }`;
 
-    const userPrompt = `Role: ${role || 'Not specified'}
+    const cvContextText = formatCvContextForPrompt(cvContext);
+
+    const userPrompt = `${cvContextText}Target Work Experience Item:
+Role: ${role || 'Not specified'}
 Company: ${company || 'Not specified'}
 ${jobDescription ? `Target Job Description:\n${jobDescription}\n` : ''}
-Current Description / Notes:
+Current Description / Notes to enhance:
 ${description}`;
 
     const result = await aiCompleteJson(

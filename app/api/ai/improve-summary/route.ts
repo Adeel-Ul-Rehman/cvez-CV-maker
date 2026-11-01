@@ -4,6 +4,7 @@ import { handleApiError } from '@/lib/errors';
 import { aiCompleteJson, logAiUsage } from '@/lib/ai';
 import { enforceAiRateLimit } from '@/lib/ai/rate-limit';
 import { improveSummarySchema, improveSummaryAiOutputSchema } from '@/lib/schemas/ai';
+import { formatCvContextForPrompt } from '@/lib/ai/cv-context-helper';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,12 +19,13 @@ export async function POST(req: NextRequest) {
     enforceAiRateLimit(userId, 'improve_summary');
 
     const body = await req.json();
-    const { currentSummary, jobTitle, jobDescription, existingCvContext } =
+    const { currentSummary, jobTitle, jobDescription, cvContext, existingCvContext } =
       improveSummarySchema.parse(body);
 
     const systemPrompt = `You are a professional executive resume writer.
 Your task is to craft 3 distinct, compelling professional resume summaries.
 Each summary must be 2-4 sentences, max 500 characters, well-punctuated, and highlight core strengths and value proposition.
+If candidate background context (experience, education, skills, strengths) is provided, synthesize their actual achievements and strengths rather than generic text.
 You must return ONLY a JSON object with this shape:
 {
   "suggestions": [
@@ -43,8 +45,10 @@ You must return ONLY a JSON object with this shape:
 }
 Styles MUST be exactly: "professional", "concise", and "achievement-focused".`;
 
-    const userPrompt = `${
-      currentSummary ? `Current Summary to improve:\n${currentSummary}\n\n` : 'No current summary provided (generate from scratch).\n\n'
+    const cvContextText = formatCvContextForPrompt(cvContext);
+
+    const userPrompt = `${cvContextText}${
+      currentSummary ? `Current Summary to improve:\n${currentSummary}\n\n` : 'No current summary provided (craft from candidate background).\n\n'
     }${jobTitle ? `Target Role/Title: ${jobTitle}\n` : ''}${
       jobDescription ? `Target Job Description:\n${jobDescription}\n` : ''
     }${

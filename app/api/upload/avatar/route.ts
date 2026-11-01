@@ -33,11 +33,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Validate file size (100 KB max limit for avatars)
-    const MAX_AVATAR_SIZE_BYTES = 100 * 1024;
+    // 3. Validate file size (600 KB max limit for avatars)
+    const MAX_AVATAR_SIZE_BYTES = 600 * 1024;
     if (file.size > MAX_AVATAR_SIZE_BYTES) {
       throw badRequest(
-        'Profile picture size exceeds the 100 KB limit. Please select an image under 100 KB.',
+        'Profile picture size exceeds the 600 KB limit. Please select an image under 600 KB.',
         'INVALID_FILE_SIZE'
       );
     }

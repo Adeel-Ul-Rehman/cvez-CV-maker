@@ -52,14 +52,38 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // 2. Prepare and validate data
+      // 2. Prepare data: Automatically inherit profile & career details from user's latest CV
+      const previousCvRows = await tx.sql`
+        SELECT data
+        FROM cvs
+        WHERE user_id = ${authUser.userId}
+        ORDER BY updated_at DESC
+        LIMIT 1;
+      `;
+      const prevData = previousCvRows?.[0]?.data as any;
+
       const starter = emptyCvData(user.full_name || undefined);
+
+      const mergedBasics = {
+        ...starter.basics,
+        ...(prevData?.basics || {}),
+        ...(partialData?.basics || {}),
+      };
+
+      const mergedSections =
+        partialData?.sections !== undefined
+          ? partialData.sections
+          : prevData?.sections && Array.isArray(prevData.sections) && prevData.sections.length > 0
+          ? prevData.sections
+          : starter.sections;
+
       const mergedData = {
-        basics: {
-          ...starter.basics,
-          ...(partialData?.basics || {}),
+        basics: mergedBasics,
+        sections: mergedSections,
+        meta: {
+          wizardCompleted: false,
+          wizardStep: 1,
         },
-        sections: partialData?.sections !== undefined ? partialData.sections : starter.sections,
       };
 
       const validatedData = cvDataSchema.parse(mergedData);
@@ -68,6 +92,8 @@ export async function POST(req: NextRequest) {
       const defaultConf = defaultConfigFor(templateKey);
       const mergedConfig = {
         ...defaultConf,
+        wizardCompleted: false,
+        wizardStep: 1,
         ...(partialConfig || {}),
       };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Container } from './container';
@@ -32,9 +32,33 @@ export function Navbar() {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerMounted, setDrawerMounted] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = React.useRef<HTMLDivElement>(null);
+
+  const openDrawer = useCallback(() => {
+    setIsClosing(false);
+    setDrawerOpen(true);
+  }, []);
+
+  const closeDrawer = useCallback(() => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      setDrawerOpen(false);
+      setIsClosing(false);
+      setDrawerMounted(false);
+    }, 280);
+  }, [isClosing]);
+
+  useEffect(() => {
+    if (drawerOpen && !isClosing) {
+      const raf = requestAnimationFrame(() => setDrawerMounted(true));
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [drawerOpen, isClosing]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -59,6 +83,8 @@ export function Navbar() {
   // Close menus on route change
   useEffect(() => {
     setDrawerOpen(false);
+    setIsClosing(false);
+    setDrawerMounted(false);
     setUserMenuOpen(false);
   }, [pathname]);
 
@@ -110,17 +136,8 @@ export function Navbar() {
       >
         <Container>
           <div className="flex h-16 items-center justify-between">
-            {/* Left: Mobile Drawer Trigger + Brand Logo */}
+            {/* Left: Brand Logo & Desktop Nav */}
             <div className="flex items-center gap-3 sm:gap-8">
-              <button
-                type="button"
-                onClick={() => setDrawerOpen(true)}
-                className="md:hidden inline-flex items-center justify-center p-2 -ml-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 cursor-pointer"
-                aria-label="Open navigation menu"
-              >
-                <Menu className="h-6 w-6" />
-              </button>
-
               <Logo size="md" />
 
               {/* Desktop Nav Links */}
@@ -145,7 +162,7 @@ export function Navbar() {
               </nav>
             </div>
 
-            {/* Right: Theme Toggle + Auth Buttons */}
+            {/* Right: Theme Toggle + Auth Buttons + Mobile Hamburger */}
             <div className="flex items-center gap-2 sm:gap-3">
               <ThemeToggle />
 
@@ -247,37 +264,42 @@ export function Navbar() {
                 )}
               </div>
 
-              {/* Mobile Quick "New" CTA */}
-              {!user && (
-                <div className="md:hidden">
-                  <Link href="/login">
-                    <Button variant="primary" size="sm" className="text-xs h-8 px-3">
-                      Sign In
-                    </Button>
-                  </Link>
-                </div>
-              )}
+              {/* Mobile Hamburger Drawer Trigger (Right-aligned) */}
+              <button
+                type="button"
+                onClick={openDrawer}
+                className="md:hidden inline-flex items-center justify-center p-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 cursor-pointer"
+                aria-label="Open navigation menu"
+              >
+                <Menu className="h-6 w-6" />
+              </button>
             </div>
           </div>
         </Container>
       </header>
 
-      {/* LEFT-TO-RIGHT SLIDE-OVER DRAWER FOR MOBILE */}
+      {/* RIGHT-TO-LEFT SLIDE-OVER DRAWER FOR MOBILE WITH SMOOTH EXIT */}
       {drawerOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          {/* Dark Backdrop Overlay */}
+          {/* Dark Backdrop Overlay with fade in/out */}
           <div
-            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
-            onClick={() => setDrawerOpen(false)}
+            className={cn(
+              'fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity duration-300 ease-in-out',
+              drawerMounted && !isClosing ? 'opacity-100' : 'opacity-0'
+            )}
+            onClick={closeDrawer}
             aria-hidden="true"
           />
 
-          {/* Sliding Drawer Container (Left-to-Right) */}
+          {/* Sliding Drawer Container (Slide in from right, slide back to right on close) */}
           <div
             role="dialog"
             aria-modal="true"
             aria-label="Navigation drawer"
-            className="fixed inset-y-0 left-0 w-[84vw] max-w-[320px] bg-white dark:bg-slate-900 shadow-2xl border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-left duration-300 z-50"
+            className={cn(
+              'fixed inset-y-0 right-0 w-[84vw] max-w-[320px] bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 flex flex-col justify-between overflow-y-auto z-50 transform transition-transform duration-300 ease-out',
+              drawerMounted && !isClosing ? 'translate-x-0' : 'translate-x-full'
+            )}
           >
             {/* Drawer Header & Profile */}
             <div>
@@ -286,7 +308,7 @@ export function Navbar() {
                 <Logo size="md" />
                 <button
                   type="button"
-                  onClick={() => setDrawerOpen(false)}
+                  onClick={closeDrawer}
                   className="p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   aria-label="Close menu drawer"
                 >
@@ -341,12 +363,12 @@ export function Navbar() {
                     Create ATS-optimized resumes with AI bullet enhancements and export anytime.
                   </p>
                   <div className="grid grid-cols-2 gap-2">
-                    <Link href="/login" onClick={() => setDrawerOpen(false)} className="w-full">
+                    <Link href="/login" onClick={closeDrawer} className="w-full">
                       <Button variant="outline" size="sm" fullWidth className="text-xs">
                         Sign In
                       </Button>
                     </Link>
-                    <Link href="/register" onClick={() => setDrawerOpen(false)} className="w-full">
+                    <Link href="/register" onClick={closeDrawer} className="w-full">
                       <Button variant="primary" size="sm" fullWidth className="text-xs">
                         Join Free
                       </Button>
@@ -366,7 +388,7 @@ export function Navbar() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={() => setDrawerOpen(false)}
+                      onClick={closeDrawer}
                       className={cn(
                         'flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-colors',
                         isActive
@@ -391,7 +413,7 @@ export function Navbar() {
                 <button
                   type="button"
                   onClick={() => {
-                    setDrawerOpen(false);
+                    closeDrawer();
                     dispatch(logoutUser());
                   }}
                   className="flex items-center gap-2.5 w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer"
@@ -406,7 +428,7 @@ export function Navbar() {
       )}
 
       {/* STICKY BOTTOM MOBILE NAVIGATION BAR */}
-      <MobileBottomNav onOpenDrawer={() => setDrawerOpen(true)} />
+      <MobileBottomNav onOpenDrawer={openDrawer} />
     </>
   );
 }

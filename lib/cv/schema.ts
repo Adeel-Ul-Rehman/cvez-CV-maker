@@ -192,9 +192,18 @@ export type CvBasics = z.infer<typeof cvBasicsSchema>;
 // Full CV Data Schema
 // -------------------------------------------------------------
 
+export const cvMetaSchema = z
+  .object({
+    wizardCompleted: z.boolean().default(false).optional(),
+    wizardStep: z.number().min(1).max(10).default(1).optional(),
+  })
+  .optional()
+  .nullable();
+
 export const cvDataSchema = z.object({
   basics: cvBasicsSchema,
   sections: z.array(cvSectionSchema).default([]),
+  meta: cvMetaSchema,
 });
 
 export type CvData = z.infer<typeof cvDataSchema>;
@@ -214,6 +223,9 @@ export const cvConfigSchema = z.object({
   lineHeight: z.number().min(1.0).max(2.2).default(1.45).optional(),
   headingStyle: z.enum(['uppercase', 'capitalize', 'underlined', 'bordered']).default('uppercase').optional(),
   pageSize: z.enum(['A4', 'LETTER']).default('A4'),
+  // Step Wizard progress tracking
+  wizardCompleted: z.boolean().default(false).optional(),
+  wizardStep: z.number().min(1).max(10).default(1).optional(),
 });
 
 export type CvConfig = z.infer<typeof cvConfigSchema>;

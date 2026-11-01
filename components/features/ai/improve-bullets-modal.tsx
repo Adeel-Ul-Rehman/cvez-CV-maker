@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
 import { toastError, toastSuccess } from '@/components/ui/toast';
 import { apiClient } from '@/lib/api-client';
-import { Sparkles, Check, RefreshCw } from 'lucide-react';
+import { Sparkles, Check, RefreshCw, Layers } from 'lucide-react';
+import { CvContext } from '@/lib/schemas/ai';
 
 interface BulletSuggestion {
   text: string;
@@ -21,6 +22,7 @@ interface ImproveBulletsModalProps {
   role?: string | null;
   company?: string | null;
   currentDescription: string;
+  cvContext?: CvContext | null;
   onApply: (bulletText: string) => void;
 }
 
@@ -30,6 +32,7 @@ export function ImproveBulletsModal({
   role,
   company,
   currentDescription,
+  cvContext,
   onApply,
 }: ImproveBulletsModalProps) {
   const [descriptionInput, setDescriptionInput] = useState(
@@ -39,6 +42,11 @@ export function ImproveBulletsModal({
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<BulletSuggestion[]>([]);
   const [provider, setProvider] = useState<string | null>(null);
+
+  const hasSkillsOrStrengths = Boolean(
+    (cvContext?.skills && cvContext.skills.length > 0) ||
+    (cvContext?.strengths && cvContext.strengths.length > 0)
+  );
 
   const handleGenerate = async () => {
     if (!descriptionInput.trim() || descriptionInput.trim().length < 10) {
@@ -57,6 +65,7 @@ export function ImproveBulletsModal({
         role: role || undefined,
         company: company || undefined,
         jobDescription: jobDescription.trim() || undefined,
+        cvContext: cvContext || undefined,
       });
 
       if (res.data?.suggestions) {
@@ -86,6 +95,17 @@ export function ImproveBulletsModal({
       size="lg"
     >
       <div className="space-y-4">
+        {hasSkillsOrStrengths && (
+          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-primary-50 dark:bg-primary-950/40 border border-primary-200 dark:border-primary-800 text-xs text-primary-800 dark:text-primary-300">
+            <Layers className="h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
+            <span>
+              <strong>Smart CV Context active:</strong> AI will tailor bullets using your skills (
+              {cvContext?.skills?.slice(0, 5).join(', ') || 'skills'}
+              {cvContext?.skills && cvContext.skills.length > 5 ? '...' : ''}).
+            </span>
+          </div>
+        )}
+
         <div className="text-xs text-slate-500 flex gap-4">
           {role && (
             <span>

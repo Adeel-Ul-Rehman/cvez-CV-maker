@@ -7,6 +7,7 @@ const FEATURE_LIMITS: Record<AiFeatureName, number> = {
   improve_summary: 15,
   improve_bullets: 20,
   improve_skills: 15,
+  suggest_strengths: 15,
   ats_check: 5,
   template_search: 30,
 };

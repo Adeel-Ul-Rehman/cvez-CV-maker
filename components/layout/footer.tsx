@@ -22,9 +22,6 @@ export function Footer() {
             <Link href="/about" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
               About
             </Link>
-            <Link href="/login" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-              Sign In
-            </Link>
           </div>
         </div>
 

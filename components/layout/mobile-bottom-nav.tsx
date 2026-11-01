@@ -15,8 +15,8 @@ export function MobileBottomNav({ onOpenDrawer }: MobileBottomNavProps) {
   const pathname = usePathname();
   const { user } = useAppSelector((state) => state.auth);
 
-  // Hide bottom nav in full-screen editor to maximize editing area
-  if (pathname.includes('/editor')) {
+  // Hide bottom nav in full-screen editor and step wizard to maximize editing area and prevent button collision
+  if (pathname.includes('/editor') || pathname.includes('/wizard')) {
     return null;
   }
 
@@ -112,3 +112,4 @@ export function MobileBottomNav({ onOpenDrawer }: MobileBottomNavProps) {
     </nav>
   );
 }
+

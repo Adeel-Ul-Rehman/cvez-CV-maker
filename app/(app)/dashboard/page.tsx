@@ -37,6 +37,8 @@ interface CvItem {
   template_key: string;
   is_public: boolean;
   public_slug?: string | null;
+  config?: Record<string, any>;
+  data?: Record<string, any>;
   created_at: string;
   updated_at: string;
 }
@@ -292,7 +294,15 @@ export default function DashboardPage() {
           />
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-6">
-            {cvs.map((cv) => (
+            {cvs.map((cv) => {
+              const isCompleted =
+                cv.config?.wizardCompleted === true || cv.data?.meta?.wizardCompleted === true;
+              const currentStep = cv.config?.wizardStep || cv.data?.meta?.wizardStep || 1;
+              const primaryTargetUrl = isCompleted
+                ? `/cv/${cv.id}/editor`
+                : `/cv/${cv.id}/wizard?step=${currentStep}`;
+
+              return (
               <Card
                 key={cv.id}
                 className="overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow group border-slate-200 dark:border-slate-800 rounded-xl sm:rounded-2xl"
@@ -300,13 +310,17 @@ export default function DashboardPage() {
                 <div>
                   {/* Thumbnail Container */}
                   <div className="relative aspect-[3/4] bg-slate-100 dark:bg-slate-900 overflow-hidden border-b border-slate-100 dark:border-slate-800">
-                    <Link href={`/cv/${cv.id}/editor`} className="block w-full h-full cursor-pointer">
+                    <Link href={primaryTargetUrl} className="block w-full h-full cursor-pointer">
                       <CvPreviewFrame cvId={cv.id} title={`${cv.title} preview`} />
                     </Link>
 
                     {/* Status Badge */}
                     <div className="absolute top-1.5 left-1.5 sm:top-2.5 sm:left-2.5 pointer-events-none">
-                      {cv.is_public ? (
+                      {!isCompleted ? (
+                        <Badge variant="warning" className="text-[9px] sm:text-xs px-1.5 py-0 bg-amber-500 text-white shadow-xs font-semibold">
+                          Step {currentStep}/10 (Draft)
+                        </Badge>
+                      ) : cv.is_public ? (
                         <Badge variant="success" className="text-[9px] sm:text-xs px-1.5 py-0 shadow-xs">Public</Badge>
                       ) : (
                         <Badge variant="outline" className="text-[9px] sm:text-xs px-1.5 py-0 bg-white/90 dark:bg-slate-900/90 shadow-xs">Private</Badge>
@@ -315,9 +329,9 @@ export default function DashboardPage() {
 
                     {/* Desktop Hover Overlay */}
                     <div className="hidden sm:flex absolute inset-0 bg-slate-950/50 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-2 backdrop-blur-[2px]">
-                      <Link href={`/cv/${cv.id}/editor`}>
-                        <Button variant="primary" size="sm" leftIcon={<Edit3 className="h-4 w-4" />}>
-                          Edit CV
+                      <Link href={primaryTargetUrl}>
+                        <Button variant="primary" size="sm" leftIcon={isCompleted ? <Edit3 className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}>
+                          {isCompleted ? 'Edit CV' : `Resume Step ${currentStep}`}
                         </Button>
                       </Link>
                     </div>
@@ -336,9 +350,15 @@ export default function DashboardPage() {
 
                 {/* Mobile Actions (Edit button + One-Tap PDF + Quick menu) */}
                 <div className="sm:hidden p-2 pt-0 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-1">
-                  <Link href={`/cv/${cv.id}/editor`} className="flex-1 min-w-0">
-                    <Button variant="primary" size="sm" className="w-full text-[11px] h-7 px-1.5 py-0 font-medium">
-                      Edit
+                  <Link href={primaryTargetUrl} className="flex-1 min-w-0">
+                    <Button
+                      variant={isCompleted ? 'primary' : 'secondary'}
+                      size="sm"
+                      className={`w-full text-[11px] h-7 px-1.5 py-0 font-medium ${
+                        !isCompleted ? 'bg-amber-500 hover:bg-amber-600 text-white' : ''
+                      }`}
+                    >
+                      {isCompleted ? 'Edit' : `Resume (${currentStep}/10)`}
                     </Button>
                   </Link>
 
@@ -372,7 +392,27 @@ export default function DashboardPage() {
                           className="fixed inset-0 z-40 bg-black/20"
                           onClick={() => setMobileMenuId(null)}
                         />
-                        <div className="absolute right-0 bottom-full mb-1.5 w-44 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 text-left text-xs">
+                        <div className="absolute right-0 bottom-full mb-1.5 w-48 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 text-left text-xs">
+                          <Link
+                            href={`/cv/${cv.id}/wizard?step=${currentStep}`}
+                            className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center gap-2"
+                            onClick={() => setMobileMenuId(null)}
+                          >
+                            <Sparkles className="h-3.5 w-3.5 text-primary-600" />
+                            <span>Step Wizard ({currentStep}/10)</span>
+                          </Link>
+
+                          <Link
+                            href={`/cv/${cv.id}/editor`}
+                            className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center gap-2"
+                            onClick={() => setMobileMenuId(null)}
+                          >
+                            <Edit3 className="h-3.5 w-3.5 text-slate-500" />
+                            <span>Full Studio Editor</span>
+                          </Link>
+
+                          <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+
                           <button
                             type="button"
                             onClick={() => {
@@ -456,9 +496,21 @@ export default function DashboardPage() {
 
                 {/* Desktop Actions Footer */}
                 <div className="hidden sm:flex p-4 pt-0 border-t border-slate-100 dark:border-slate-800/80 items-center justify-between gap-1 text-slate-500">
-                  <Link href={`/cv/${cv.id}/editor`}>
-                    <Button variant="ghost" size="sm" aria-label="Edit">
-                      <Edit3 className="h-4 w-4" />
+                  <Link href={primaryTargetUrl}>
+                    <Button
+                      variant={isCompleted ? 'ghost' : 'outline'}
+                      size="sm"
+                      aria-label={isCompleted ? 'Edit CV in Studio' : `Resume Step ${currentStep}`}
+                      title={isCompleted ? 'Edit CV in Studio' : `Resume Step ${currentStep} in Wizard`}
+                      className={!isCompleted ? 'text-amber-600 border-amber-300 dark:border-amber-800' : ''}
+                    >
+                      {isCompleted ? <Edit3 className="h-4 w-4" /> : <Sparkles className="h-4 w-4 text-amber-500" />}
+                    </Button>
+                  </Link>
+
+                  <Link href={`/cv/${cv.id}/wizard?step=${currentStep}`}>
+                    <Button variant="ghost" size="sm" aria-label="Open Wizard" title="Open Setup Wizard">
+                      <Sparkles className="h-4 w-4 text-primary-500" />
                     </Button>
                   </Link>
 
@@ -542,7 +594,8 @@ export default function DashboardPage() {
                   </Button>
                 </div>
               </Card>
-            ))}
+            );
+          })}
           </div>
         )}
       </div>

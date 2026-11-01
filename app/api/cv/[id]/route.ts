@@ -100,6 +100,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
             ...(partialData.basics || {}),
           },
           sections: partialData.sections !== undefined ? partialData.sections : (currentData.sections || []),
+          meta: {
+            ...(currentData.meta || {}),
+            ...(partialData.meta || {}),
+          },
         };
         finalData = cvDataSchema.parse(merged);
       }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAppSelector } from '@/store/hooks';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,9 +15,11 @@ import { Modal } from '@/components/ui/modal';
 import { ImproveBulletsModal } from '@/components/features/ai/improve-bullets-modal';
 import { ImproveSummaryModal } from '@/components/features/ai/improve-summary-modal';
 import { ImproveSkillsModal } from '@/components/features/ai/improve-skills-modal';
+import { SuggestStrengthsModal } from '@/components/features/ai/suggest-strengths-modal';
 import { toastError, toastSuccess } from '@/components/ui/toast';
 import { apiClient } from '@/lib/api-client';
 import { CvPreviewFrame } from '@/components/features/cv/cv-preview-frame';
+import { compressImageTo100KB } from '@/lib/image-compressor';
 import {
   User,
   Briefcase,
@@ -60,6 +62,8 @@ const STEPS = [
 export default function CvWizardPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const stepQuery = searchParams.get('step');
   const cvId = params.id as string;
 
   const authUser = useAppSelector((state) => state.auth.user);
@@ -95,49 +99,41 @@ export default function CvWizardPage() {
     }
   };
 
-  // Photo upload handler with strict 100 KB limit
+  // Photo upload handler: accepts up to 600 KB and auto-compresses to < 100 KB
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const MAX_KB = 100;
-    const MAX_BYTES = MAX_KB * 1024;
-    if (file.size > MAX_BYTES) {
-      toastError(
-        'Photo too large',
-        `Maximum photo size is ${MAX_KB} KB. Your file is ${(file.size / 1024).toFixed(1)} KB.`
-      );
-      if (photoInputRef.current) photoInputRef.current.value = '';
-      return;
-    }
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
 
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const dataUrl = reader.result as string;
-        setBasics((prev) => ({ ...prev, photoUrl: dataUrl }));
-        toastSuccess('Profile picture added');
+      const { file: compressedFile, dataUrl, originalSizeKB, compressedSizeKB } =
+        await compressImageTo100KB(rawFile);
 
-        try {
-          const formData = new FormData();
-          formData.append('file', file);
-          const res = await fetch('/api/upload/photo', {
-            method: 'POST',
-            body: formData,
-          });
-          if (res.ok) {
-            const json = await res.json();
-            if (json?.data?.photoUrl) {
-              setBasics((prev) => ({ ...prev, photoUrl: json.data.photoUrl }));
-            }
+      setBasics((prev) => ({ ...prev, photoUrl: dataUrl }));
+      toastSuccess(
+        'Profile picture added',
+        originalSizeKB > 95
+          ? `Optimized from ${originalSizeKB} KB to ${compressedSizeKB} KB`
+          : undefined
+      );
+
+      try {
+        const formData = new FormData();
+        formData.append('file', compressedFile);
+        const res = await fetch('/api/upload/photo', {
+          method: 'POST',
+          body: formData,
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data?.photoUrl) {
+            setBasics((prev) => ({ ...prev, photoUrl: json.data.photoUrl }));
           }
-        } catch {
-          // Base64 dataUrl is safely set as fallback
         }
-      };
-      reader.readAsDataURL(file);
+      } catch {
+        // Base64 dataUrl is safely set as fallback
+      }
     } catch (err: any) {
-      toastError('Failed to read image', err.message);
+      toastError('Photo upload failed', err.message || 'Please select an image under 600 KB.');
     } finally {
       if (photoInputRef.current) photoInputRef.current.value = '';
     }
@@ -171,6 +167,7 @@ export default function CvWizardPage() {
   const [bulletsModalOpen, setBulletsModalOpen] = useState(false);
   const [activeExpIndex, setActiveExpIndex] = useState<number | null>(null);
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
+  const [strengthsModalOpen, setStrengthsModalOpen] = useState(false);
   const [newSkillName, setNewSkillName] = useState('');
 
   // Fetch CV initial data
@@ -212,6 +209,17 @@ export default function CvWizardPage() {
             const custom = cv.data.sections.filter((s: any) => s.type === 'custom' && !s.title?.toLowerCase().includes('strength') && !s.title?.toLowerCase().includes('interest'));
             if (custom.length > 0) setCustomSections(custom);
           }
+
+          // Restore exact step if specified via URL or saved progress
+          const parsedQuery = stepQuery ? parseInt(stepQuery, 10) : null;
+          const targetStep =
+            parsedQuery && parsedQuery >= 1 && parsedQuery <= 10
+              ? parsedQuery
+              : cv.config?.wizardStep || cv.data?.meta?.wizardStep || 1;
+
+          if (targetStep >= 1 && targetStep <= 10) {
+            setCurrentStep(targetStep);
+          }
         }
       } catch (err: any) {
         toastError('Failed to load CV', err.message);
@@ -220,7 +228,7 @@ export default function CvWizardPage() {
       }
     }
     loadCv();
-  }, [cvId]);
+  }, [cvId, stepQuery]);
 
   // Construct current sections array for saving
   const constructSectionsPayload = () => {
@@ -309,14 +317,25 @@ export default function CvWizardPage() {
     return list;
   };
 
-  const saveProgress = async () => {
+  const saveProgress = async (targetStep?: number, markCompleted?: boolean) => {
     setSaving(true);
     setSavedStatus('saving');
+    const stepToSave = targetStep || currentStep;
+    const isCompleted = markCompleted !== undefined ? markCompleted : stepToSave === 10;
+
     try {
       await apiClient.patch(`/api/cv/${cvId}`, {
         data: {
           basics,
           sections: constructSectionsPayload(),
+          meta: {
+            wizardStep: stepToSave,
+            wizardCompleted: isCompleted,
+          },
+        },
+        config: {
+          wizardStep: stepToSave,
+          wizardCompleted: isCompleted,
         },
       });
       setSavedStatus('saved');
@@ -337,12 +356,18 @@ export default function CvWizardPage() {
       return;
     }
 
-    const saved = await saveProgress();
-    if (saved) {
-      if (currentStep < STEPS.length) {
-        setCurrentStep((s) => s + 1);
+    if (currentStep < STEPS.length) {
+      const nextStep = currentStep + 1;
+      const saved = await saveProgress(nextStep, false);
+      if (saved) {
+        setCurrentStep(nextStep);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
+      }
+    } else {
+      // Step 10 reached: Mark wizard as complete and open editor
+      const saved = await saveProgress(10, true);
+      if (saved) {
+        toastSuccess('CV Setup Completed!', 'Opening full studio editor.');
         router.push(`/cv/${cvId}/editor`);
       }
     }
@@ -388,8 +413,16 @@ export default function CvWizardPage() {
               <Check className="h-3.5 w-3.5 stroke-[3]" /> All changes saved
             </span>
           )}
-          <Button variant="ghost" size="sm" onClick={() => router.push(`/cv/${cvId}/editor`)}>
-            Skip to Full Editor
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              await saveProgress(currentStep, true);
+              router.push(`/cv/${cvId}/editor`);
+            }}
+          >
+            <span className="hidden sm:inline">Skip to Full Editor</span>
+            <span className="sm:hidden">Full Editor</span>
           </Button>
         </div>
       </div>
@@ -611,7 +644,7 @@ export default function CvWizardPage() {
                     </span>
                   </div>
                   <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
-                    Max 100 KB · Optional
+                    Up to 600 KB (Auto-optimized to &lt; 100 KB) · Optional
                   </span>
                 </div>
 
@@ -689,7 +722,7 @@ export default function CvWizardPage() {
                       )}
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Add a professional headshot or skip this option if your template doesn&apos;t require it. Max 100 KB.
+                      Add a professional headshot (up to 600 KB, auto-compressed to &lt; 100 KB) or skip this option if your template doesn&apos;t require it.
                     </p>
                   </div>
                 </div>
@@ -1110,7 +1143,7 @@ export default function CvWizardPage() {
           {/* STEP 5: STRENGTHS & HIGHLIGHTS (OPTIONAL) */}
           {currentStep === 5 && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                     <Target className="h-5 w-5 text-primary-600" />
@@ -1120,19 +1153,31 @@ export default function CvWizardPage() {
                     Highlight core strengths, problem-solving skills, and leadership capabilities.
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setStrengths([
-                      ...strengths,
-                      { title: '', description: '' },
-                    ])
-                  }
-                  leftIcon={<Plus className="h-4 w-4" />}
-                >
-                  Add Strength
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStrengthsModalOpen(true)}
+                    leftIcon={<Sparkles className="h-4 w-4 text-primary-600 dark:text-primary-400" />}
+                    className="border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-300 font-semibold"
+                  >
+                    <span className="hidden sm:inline">AI Strengths Assistant</span>
+                    <span className="sm:hidden">AI Strengths</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setStrengths([
+                        ...strengths,
+                        { title: '', description: '' },
+                      ])
+                    }
+                    leftIcon={<Plus className="h-4 w-4" />}
+                  >
+                    Add
+                  </Button>
+                </div>
               </div>
 
               {/* Quick suggestion chips */}
@@ -1625,16 +1670,31 @@ export default function CvWizardPage() {
                   </div>
                 </div>
 
-                {basics.summary && (
-                  <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80">
-                    <span className="text-[11px] font-semibold uppercase text-slate-500 block mb-1">
+                <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold uppercase text-slate-500">
                       Professional Summary:
                     </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSummaryModalOpen(true)}
+                      className="h-6 text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 px-2 gap-1 font-semibold"
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      <span>{basics.summary ? 'Refine with Full CV Context' : 'Generate Summary with AI'}</span>
+                    </Button>
+                  </div>
+                  {basics.summary ? (
                     <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic">
                       &quot;{basics.summary}&quot;
                     </p>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">
+                      No summary provided yet. Click &quot;Generate Summary with AI&quot; to synthesize your work history into an executive summary.
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* 2. Work Experience */}
@@ -2005,50 +2065,94 @@ export default function CvWizardPage() {
           )}
 
           {/* Navigation Action Buttons */}
-          <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
-            <Button
-              variant="outline"
-              onClick={handlePrev}
-              disabled={currentStep === 1 || saving}
-              leftIcon={<ArrowLeft className="h-4 w-4" />}
-            >
-              Previous
-            </Button>
+          <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
+            {/* Mobile Layout: 2-row layout so Next Step NEVER overflows */}
+            <div className="sm:hidden space-y-2.5">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handlePrev}
+                  disabled={currentStep === 1 || saving}
+                  leftIcon={<ArrowLeft className="h-4 w-4" />}
+                  className="flex-1 text-xs"
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleNext}
+                  loading={saving}
+                  rightIcon={<ArrowRight className="h-4 w-4" />}
+                  className="flex-1 text-xs font-bold"
+                >
+                  {currentStep === 10 ? 'Finish & Open' : 'Next Step'}
+                </Button>
+              </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                type="button"
-                onClick={async () => {
-                  await saveProgress();
-                  setPreviewTimestamp(Date.now());
-                  setMobileTab('preview');
-                }}
-                className="lg:hidden text-xs"
-                leftIcon={<Eye className="h-3.5 w-3.5" />}
-              >
-                Preview
-              </Button>
-              {STEPS[currentStep - 1].optional && (
+              <div className="flex items-center justify-between gap-2 pt-0.5">
                 <Button
                   variant="ghost"
+                  size="sm"
+                  type="button"
                   onClick={async () => {
                     await saveProgress();
-                    setCurrentStep((s) => s + 1);
+                    setPreviewTimestamp(Date.now());
+                    setMobileTab('preview');
                   }}
+                  className="text-xs text-primary-600 dark:text-primary-400 h-8 px-2"
+                  leftIcon={<Eye className="h-3.5 w-3.5" />}
                 >
-                  Skip for now
+                  Quick Preview
                 </Button>
-              )}
+
+                {STEPS[currentStep - 1].optional && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      await saveProgress();
+                      setCurrentStep((s) => s + 1);
+                    }}
+                    className="text-xs text-slate-500 h-8 px-2"
+                  >
+                    Skip for now →
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Desktop Layout: Clean single-row */}
+            <div className="hidden sm:flex items-center justify-between gap-4">
               <Button
-                variant="primary"
-                onClick={handleNext}
-                loading={saving}
-                rightIcon={<ArrowRight className="h-4 w-4" />}
+                variant="outline"
+                onClick={handlePrev}
+                disabled={currentStep === 1 || saving}
+                leftIcon={<ArrowLeft className="h-4 w-4" />}
               >
-                {currentStep === 10 ? 'Finish & Open Editor' : 'Next Step'}
+                Previous
               </Button>
+
+              <div className="flex items-center gap-3">
+                {STEPS[currentStep - 1].optional && (
+                  <Button
+                    variant="ghost"
+                    onClick={async () => {
+                      await saveProgress();
+                      setCurrentStep((s) => s + 1);
+                    }}
+                  >
+                    Skip for now
+                  </Button>
+                )}
+                <Button
+                  variant="primary"
+                  onClick={handleNext}
+                  loading={saving}
+                  rightIcon={<ArrowRight className="h-4 w-4" />}
+                >
+                  {currentStep === 10 ? 'Finish & Open Editor' : 'Next Step'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -2056,11 +2160,32 @@ export default function CvWizardPage() {
       </>
       )}
 
-      {/* AI Modals */}
+      {/* AI Modals with Full CV Context */}
       <ImproveSummaryModal
         isOpen={summaryModalOpen}
         onClose={() => setSummaryModalOpen(false)}
         currentSummary={basics.summary || ''}
+        cvContext={{
+          fullName: basics.fullName,
+          headline: (basics as any).headline || experience[0]?.role || '',
+          summary: basics.summary,
+          experiences: experience.map((e) => ({
+            role: e.role,
+            company: e.company,
+            description: e.description,
+            startDate: e.startDate,
+            endDate: e.endDate,
+          })),
+          education: education.map((ed) => ({
+            degree: ed.degree,
+            institution: ed.institution,
+            field: ed.field,
+            graduationDate: ed.endDate,
+          })),
+          skills: skills.map((s) => s.name),
+          strengths: strengths.map((st) => st.name || st.title || st),
+          certifications: certifications.map((c) => c.name || c.title || c),
+        }}
         onApply={(text) => setBasics({ ...basics, summary: text })}
       />
 
@@ -2073,6 +2198,12 @@ export default function CvWizardPage() {
         currentDescription={activeExpIndex !== null ? experience[activeExpIndex]?.description || '' : ''}
         role={activeExpIndex !== null ? experience[activeExpIndex]?.role : ''}
         company={activeExpIndex !== null ? experience[activeExpIndex]?.company : ''}
+        cvContext={{
+          fullName: basics.fullName,
+          headline: (basics as any).headline || experience[0]?.role || '',
+          skills: skills.map((s) => s.name),
+          strengths: strengths.map((st) => st.name || st.title || st),
+        }}
         onApply={(bullet) => {
           if (activeExpIndex !== null) {
             const updated = [...experience];
@@ -2087,9 +2218,50 @@ export default function CvWizardPage() {
         isOpen={skillsModalOpen}
         onClose={() => setSkillsModalOpen(false)}
         currentSkills={skills.map((s) => s.name)}
+        cvContext={{
+          fullName: basics.fullName,
+          headline: (basics as any).headline || experience[0]?.role || '',
+          experiences: experience.map((e) => ({
+            role: e.role,
+            company: e.company,
+            description: e.description,
+          })),
+          education: education.map((ed) => ({
+            degree: ed.degree,
+            institution: ed.institution,
+            field: ed.field,
+          })),
+          skills: skills.map((s) => s.name),
+        }}
         onAddSkill={(skill) => {
           if (!skills.some((s) => s.name.toLowerCase() === skill.name.toLowerCase())) {
             setSkills([...skills, { name: skill.name, level: skill.level || 'intermediate' }]);
+          }
+        }}
+      />
+
+      <SuggestStrengthsModal
+        isOpen={strengthsModalOpen}
+        onClose={() => setStrengthsModalOpen(false)}
+        currentStrengths={strengths.map((s) => s.title || s.name || '')}
+        cvContext={{
+          fullName: basics.fullName,
+          headline: (basics as any).headline || experience[0]?.role || '',
+          experiences: experience.map((e) => ({
+            role: e.role,
+            company: e.company,
+            description: e.description,
+          })),
+          education: education.map((ed) => ({
+            degree: ed.degree,
+            institution: ed.institution,
+            field: ed.field,
+          })),
+          skills: skills.map((s) => s.name),
+        }}
+        onAddStrength={(item) => {
+          if (!strengths.some((s) => (s.title || s.name) === item.title)) {
+            setStrengths([...strengths, item]);
           }
         }}
       />

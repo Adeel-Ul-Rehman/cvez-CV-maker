@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { toastError, toastSuccess } from '@/components/ui/toast';
 import { apiClient } from '@/lib/api-client';
-import { Sparkles, Check, RefreshCw } from 'lucide-react';
+import { Sparkles, Check, RefreshCw, Layers } from 'lucide-react';
+import { CvContext } from '@/lib/schemas/ai';
 
 interface Suggestion {
   text: string;
@@ -20,6 +21,7 @@ interface ImproveSummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentSummary: string;
+  cvContext?: CvContext | null;
   onApply: (text: string) => void;
 }
 
@@ -27,6 +29,7 @@ export function ImproveSummaryModal({
   isOpen,
   onClose,
   currentSummary,
+  cvContext,
   onApply,
 }: ImproveSummaryModalProps) {
   const [jobTitle, setJobTitle] = useState('');
@@ -34,6 +37,18 @@ export function ImproveSummaryModal({
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [provider, setProvider] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (isOpen && !jobTitle && cvContext?.headline) {
+      setJobTitle(cvContext.headline);
+    }
+  }, [isOpen, cvContext?.headline, jobTitle]);
+
+  const hasContext = Boolean(
+    (cvContext?.experiences && cvContext.experiences.length > 0) ||
+    (cvContext?.education && cvContext.education.length > 0) ||
+    (cvContext?.skills && cvContext.skills.length > 0)
+  );
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -46,6 +61,7 @@ export function ImproveSummaryModal({
         currentSummary: currentSummary || undefined,
         jobTitle: jobTitle.trim() || undefined,
         jobDescription: jobDescription.trim() || undefined,
+        cvContext: cvContext || undefined,
       });
 
       if (res.data?.suggestions) {
@@ -75,6 +91,18 @@ export function ImproveSummaryModal({
       size="lg"
     >
       <div className="space-y-4">
+        {hasContext && (
+          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-primary-50 dark:bg-primary-950/40 border border-primary-200 dark:border-primary-800 text-xs text-primary-800 dark:text-primary-300">
+            <Layers className="h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
+            <span>
+              <strong>Smart CV Context active:</strong> AI will automatically synthesize your{' '}
+              {cvContext?.experiences?.length ? `${cvContext.experiences.length} experience(s)` : ''}
+              {cvContext?.education?.length ? `, ${cvContext.education.length} degree(s)` : ''}
+              {cvContext?.skills?.length ? `, ${cvContext.skills.length} skill(s)` : ''} into tailored summaries.
+            </span>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-3">
           <Input
             label="Target Job Title (Optional)"

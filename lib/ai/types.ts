@@ -17,6 +17,7 @@ export type AiFeatureName =
   | 'improve_summary'
   | 'improve_bullets'
   | 'improve_skills'
+  | 'suggest_strengths'
   | 'ats_check'
   | 'template_search';
 

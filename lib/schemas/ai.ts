@@ -12,10 +12,48 @@ export const templateRecommendSchema = z.object({
     .max(5000, 'Job description cannot exceed 5000 characters'),
 });
 
+export const cvContextSchema = z
+  .object({
+    fullName: z.string().optional().nullable(),
+    headline: z.string().optional().nullable(),
+    summary: z.string().optional().nullable(),
+    experiences: z
+      .array(
+        z.object({
+          role: z.string().optional().nullable(),
+          company: z.string().optional().nullable(),
+          description: z.string().optional().nullable(),
+          startDate: z.string().optional().nullable(),
+          endDate: z.string().optional().nullable(),
+        })
+      )
+      .optional()
+      .nullable(),
+    education: z
+      .array(
+        z.object({
+          degree: z.string().optional().nullable(),
+          institution: z.string().optional().nullable(),
+          field: z.string().optional().nullable(),
+          graduationDate: z.string().optional().nullable(),
+        })
+      )
+      .optional()
+      .nullable(),
+    skills: z.array(z.string()).optional().nullable(),
+    strengths: z.array(z.string()).optional().nullable(),
+    certifications: z.array(z.string()).optional().nullable(),
+  })
+  .optional()
+  .nullable();
+
+export type CvContext = z.infer<typeof cvContextSchema>;
+
 export const improveSummarySchema = z.object({
   currentSummary: z.string().max(2000).optional().nullable(),
   jobTitle: z.string().max(100).optional().nullable(),
   jobDescription: z.string().max(5000).optional().nullable(),
+  cvContext: cvContextSchema,
   existingCvContext: z
     .object({
       sections: z.array(z.string()).optional(),
@@ -32,12 +70,20 @@ export const improveBulletsSchema = z.object({
   role: z.string().max(100).optional().nullable(),
   company: z.string().max(100).optional().nullable(),
   jobDescription: z.string().max(5000).optional().nullable(),
+  cvContext: cvContextSchema,
 });
 
 export const improveSkillsSchema = z.object({
   currentSkills: z.array(z.string()).max(50).default([]),
   jobTitle: z.string().max(100).optional().nullable(),
   jobDescription: z.string().max(5000).optional().nullable(),
+  cvContext: cvContextSchema,
+});
+
+export const suggestStrengthsSchema = z.object({
+  currentStrengths: z.array(z.string()).max(30).default([]),
+  jobTitle: z.string().max(100).optional().nullable(),
+  cvContext: cvContextSchema,
 });
 
 export const atsCheckSchema = z.union([
@@ -95,6 +141,15 @@ export const improveSkillsAiOutputSchema = z.object({
       name: z.string(),
       level: z.string().optional().nullable(),
       reason: z.string().optional().nullable(),
+    })
+  ),
+});
+
+export const suggestStrengthsAiOutputSchema = z.object({
+  suggestions: z.array(
+    z.object({
+      title: z.string().max(80),
+      description: z.string().max(200),
     })
   ),
 });
